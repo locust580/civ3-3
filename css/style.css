@@ -764,11 +764,20 @@ input  { font-family: var(--font-mono); }
 }
 
 #panel-left  { border-right: 1px solid var(--color-border); }
-#panel-right { border-left:  1px solid var(--color-border); }
+
+#panel-right {
+  width: 240px;
+  background: linear-gradient(180deg, #0a0a14 0%, #0d0d1a 100%);
+  border-left: 1px solid #1e1e3a;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
 
 .panel-section {
-  padding: 12px 12px 10px;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid #1a1a2e;
+  padding: 0;
 }
 
 .panel-section-log {
@@ -787,6 +796,19 @@ input  { font-family: var(--font-mono); }
   margin-bottom: 8px;
   padding-bottom: 4px;
   border-bottom: 1px solid var(--color-border);
+}
+
+.panel-title {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(180, 160, 100, 0.9);
+  background: linear-gradient(90deg, rgba(180,160,100,0.1) 0%, transparent 100%);
+  padding: 6px 12px 5px 12px;
+  border-bottom: 1px solid rgba(180,160,100,0.2);
+  margin: 0;
 }
 
 /* ── Empire Stats ── */
@@ -937,6 +959,7 @@ input  { font-family: var(--font-mono); }
   color: rgba(200,200,224,0.3);
   font-style: italic;
   font-size: 11px;
+  padding: 10px 12px;
 }
 
 .tile-detail {
@@ -958,10 +981,19 @@ input  { font-family: var(--font-mono); }
 }
 
 .tile-type-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-cyan);
-  letter-spacing: 0.06em;
+  font-family: 'Georgia', serif;
+  font-size: 13px;
+  font-weight: bold;
+  color: #c8c0a0;
+  margin-bottom: 4px;
+}
+
+.tile-description {
+  font-size: 10px;
+  color: rgba(160,155,140,0.7);
+  line-height: 1.4;
+  margin-bottom: 8px;
+  font-style: italic;
 }
 
 .tile-owner-row,
@@ -981,6 +1013,56 @@ input  { font-family: var(--font-mono); }
   color: #c8c8e0;
 }
 
+#tile-info {
+  padding: 10px 12px;
+  font-family: 'Courier New', monospace;
+}
+
+.tile-resources {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 8px;
+}
+
+.resource-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.resource-label {
+  color: rgba(180,175,160,0.8);
+  font-family: 'Courier New', monospace;
+}
+
+.resource-value {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+}
+
+.tile-owner-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+  border: 1px solid currentColor;
+}
+
+.tile-building-info {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 3px;
+  font-size: 11px;
+  color: #a0c8c0;
+}
+
 /* ── Build Menu ── */
 #build-panel .panel-section-title { margin-bottom: 6px; }
 
@@ -991,49 +1073,167 @@ input  { font-family: var(--font-mono); }
 }
 
 .build-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--color-border-mid);
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
-  font-size: 11px;
-  color: #c8c8e0;
-  width: 100%;
-  text-align: left;
+  transition: background 0.1s;
 }
-
-.build-item:hover:not(:disabled) {
-  background: rgba(0,255,255,0.06);
-  border-color: var(--color-cyan-dim);
+.build-item:hover {
+  background: rgba(200,160,80,0.07);
 }
-
-.build-item:disabled {
+.build-item.disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-
-.build-item-icon { font-size: 15px; }
-
-.build-item-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+.build-item-name {
+  font-family: 'Georgia', serif;
+  font-size: 12px;
+  font-weight: bold;
+  color: #c8b880;
+  margin-bottom: 3px;
+}
+.build-item-desc {
+  font-size: 10px;
+  color: rgba(160,155,140,0.65);
+  margin-bottom: 4px;
+  font-style: italic;
+}
+.build-item-cost {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: rgba(180,175,160,0.8);
+}
+.build-item-cost .cost-affordable {
+  color: #88cc88;
+}
+.build-item-cost .cost-not-affordable {
+  color: #cc6666;
+}
+.build-item-branch-boost {
+  margin-top: 3px;
+  font-size: 10px;
+  color: #88aacc;
+  font-family: 'Courier New', monospace;
+}
+.build-item-requires {
+  font-size: 10px;
+  color: #cc8844;
+  font-family: 'Courier New', monospace;
 }
 
-.build-item-name   { font-weight: 700; font-size: 12px; }
-.build-item-cost   { font-size: 10px; color: rgba(200,200,224,0.5); }
-.build-item-effect { font-size: 10px; color: var(--color-green-dim); }
+.build-category-header {
+  font-family: 'Georgia', serif;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(160,150,120,0.6);
+  padding: 6px 12px 2px;
+  background: rgba(255,255,255,0.02);
+}
+
+/* ── CIV-style Action Buttons ── */
+.tile-action-btn {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 4px 12px;
+  padding: 7px 10px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+  background: transparent;
+}
+
+.tile-action-btn:hover {
+  transform: translateX(2px);
+}
+
+.tile-action-btn.build {
+  color: #c8a050;
+  border-color: rgba(200,160,80,0.4);
+  background: rgba(200,160,80,0.05);
+}
+.tile-action-btn.build:hover {
+  background: rgba(200,160,80,0.12);
+  border-color: rgba(200,160,80,0.7);
+}
+
+.tile-action-btn.train {
+  color: #50a0c8;
+  border-color: rgba(80,160,200,0.4);
+  background: rgba(80,160,200,0.05);
+}
+.tile-action-btn.train:hover {
+  background: rgba(80,160,200,0.12);
+  border-color: rgba(80,160,200,0.7);
+}
+
+.tile-action-btn.attack {
+  color: #c85050;
+  border-color: rgba(200,80,80,0.4);
+  background: rgba(200,80,80,0.05);
+}
+.tile-action-btn.attack:hover {
+  background: rgba(200,80,80,0.12);
+  border-color: rgba(200,80,80,0.7);
+}
+
+.tile-action-btn.claim {
+  color: #50c880;
+  border-color: rgba(80,200,128,0.4);
+  background: rgba(80,200,128,0.05);
+}
+.tile-action-btn.claim:hover {
+  background: rgba(80,200,128,0.12);
+  border-color: rgba(80,200,128,0.7);
+}
+
+.tile-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Train Unit Panel ── */
+.unit-type-item {
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.unit-type-item:hover {
+  background: rgba(80,160,200,0.07);
+}
+.unit-type-name {
+  font-family: 'Georgia', serif;
+  font-size: 12px;
+  color: #80b0c8;
+  font-weight: bold;
+}
+.unit-type-stats {
+  font-size: 10px;
+  color: rgba(160,175,180,0.7);
+  font-family: 'Courier New', monospace;
+  margin-top: 2px;
+}
+.unit-type-cost {
+  font-size: 10px;
+  color: rgba(180,175,160,0.8);
+  font-family: 'Courier New', monospace;
+}
 
 /* ── Unit Actions ── */
 .unit-actions {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 0;
+  padding: 6px 0;
 }
 
 .unit-action-btn {
@@ -1058,6 +1258,54 @@ input  { font-family: var(--font-mono); }
   background: rgba(255,68,85,0.1);
   border-color: var(--color-red);
 }
+
+/* ── Build / Train Animations ── */
+@keyframes build-appear {
+  from { opacity: 0; transform: scale(0.8) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes unit-spawn {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.build-item.just-built {
+  animation: build-appear 0.3s ease-out;
+}
+.unit-type-item.just-trained {
+  animation: unit-spawn 0.4s ease-out;
+}
+
+/* ── Notification Toasts ── */
+#notification-container {
+  position: fixed;
+  bottom: 20px;
+  right: 260px;
+  z-index: 400;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 6px;
+  pointer-events: none;
+}
+.notification-toast {
+  padding: 8px 14px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  max-width: 260px;
+  border-left: 3px solid;
+}
+.notification-toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+.notification-toast.info    { background:#0d1a2a; border-color:#4488ff; color:#88bbff; }
+.notification-toast.success { background:#0d1a0d; border-color:#44aa44; color:#88dd88; }
+.notification-toast.warning { background:#1a1500; border-color:#aaaa00; color:#dddd00; }
+.notification-toast.danger  { background:#1a0808; border-color:#aa2222; color:#dd6666; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    BUTTONS

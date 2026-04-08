@@ -276,6 +276,13 @@ function startNewGame(factionId) {
   }
   UI.updateEventLog();
 
+  // ── Start tutorial if opted in ─────────────────────────────────────────────
+  const tutorialCheckbox = document.getElementById('tutorial-checkbox');
+  const doTutorial = tutorialCheckbox ? tutorialCheckbox.checked : true;
+  if (doTutorial && typeof Tutorial !== 'undefined') {
+    setTimeout(() => Tutorial.start(factionId), 800);
+  }
+
   // ── Subscribe to IdeaSpace win-condition events ────────────────────────────
   window.addEventListener('ideaspace:winCondition', (e) => {
     const { concept } = e.detail;

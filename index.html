@@ -82,6 +82,12 @@
               <div class="branch-prof-title">Branch Proficiency</div>
               <div id="fd-branch-bars" class="branch-bars"></div>
             </div>
+            <div class="tutorial-option">
+              <label class="tutorial-toggle-label">
+                <input type="checkbox" id="tutorial-checkbox" checked>
+                <span>Show Tutorial</span>
+              </label>
+            </div>
             <button class="btn-primary btn-lead" id="btn-start-game" disabled>Lead This Civilization</button>
           </div>
         </div>
@@ -181,11 +187,12 @@
       <div id="panel-right" class="game-panel">
 
         <!-- Tile Info -->
-        <div id="tile-info-panel">
-          <div class="panel-section-title">Selected Tile</div>
-          <div id="tile-info-body" class="tile-info-body">
+        <div id="tile-info-panel" class="panel-section">
+          <div class="panel-title">Selected Tile</div>
+          <div id="tile-info">
             <p class="tile-placeholder">Click a hex to inspect it.</p>
           </div>
+          <!-- Legacy detail element kept for JS fallback -->
           <div id="tile-detail" class="tile-detail hidden">
             <div class="tile-type-row">
               <span class="tile-icon" id="tile-icon">—</span>
@@ -199,14 +206,14 @@
         </div>
 
         <!-- Build Menu -->
-        <div id="build-panel" class="hidden">
-          <div class="panel-section-title">Build</div>
+        <div id="build-panel" class="panel-section hidden">
+          <div class="panel-title">Build Structure</div>
           <div id="build-menu" class="build-menu"></div>
         </div>
 
         <!-- Unit Actions -->
-        <div id="unit-panel">
-          <div class="panel-section-title">Unit Actions</div>
+        <div id="unit-panel" class="panel-section">
+          <div class="panel-title">Actions</div>
           <div id="unit-actions" class="unit-actions">
             <p class="tile-placeholder">Select a tile with your unit.</p>
           </div>
@@ -387,6 +394,7 @@
   <script src="js/engine.js"></script>
   <script src="js/renderer.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/tutorial.js"></script>
   <script src="js/main.js"></script>
 
 </body>

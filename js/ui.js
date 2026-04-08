@@ -615,13 +615,12 @@ const UI = {
    * Render tile information and available actions in the right panel.
    */
   updateRightPanel() {
-    const placeholder  = document.querySelector('.tile-placeholder');
     const detailEl     = document.getElementById('tile-detail');
     const buildPanel   = document.getElementById('build-panel');
-    const unitActPanel = document.getElementById('unit-panel');
+    const tileInfoEl   = document.getElementById('tile-info');
 
     if (!this.selectedHex) {
-      if (placeholder) placeholder.style.display = '';
+      if (tileInfoEl) tileInfoEl.innerHTML = '<p class="tile-placeholder">Click a hex to inspect it.</p>';
       if (detailEl)   detailEl.classList.add('hidden');
       if (buildPanel) buildPanel.classList.add('hidden');
       return;
@@ -633,18 +632,15 @@ const UI = {
       : null;
 
     if (!tile) {
-      if (placeholder) { placeholder.style.display = ''; placeholder.textContent = 'Tile not found.'; }
+      if (tileInfoEl) tileInfoEl.innerHTML = '<p class="tile-placeholder">Tile not found.</p>';
       if (detailEl)   detailEl.classList.add('hidden');
       if (buildPanel) buildPanel.classList.add('hidden');
       return;
     }
 
-    if (placeholder) placeholder.style.display = 'none';
-    if (detailEl)   detailEl.classList.remove('hidden');
-
-    // Basic tile info
+    // ── Tile type & yields ─────────────────────────────────────────────────
     const tileType = (typeof TILE_TYPES !== 'undefined') ? TILE_TYPES[tile.type] : null;
-    this._setText('tile-type-name', tileType ? tileType.name : tile.type);
+    const typeName = tileType ? tileType.name : tile.type;
 
     // Yields: base + building production
     const baseYields = tileType ? { ...(tileType.baseResources || {}) } : {};
@@ -656,7 +652,6 @@ const UI = {
         }
       }
     }
-    this._setText('tile-yields', this._formatResources(baseYields) || '—');
 
     // Owner
     const playerCiv = typeof GameEngine !== 'undefined' && GameEngine.getPlayerCiv
@@ -664,35 +659,78 @@ const UI = {
     const ownerCiv = tile.owner
       ? Object.values(GameEngine.state?.civs || {}).find(c => c.id === tile.owner)
       : null;
-    const ownerFaction = ownerCiv && FACTIONS ? FACTIONS[ownerCiv.factionId] : null;
-    this._setText('tile-owner', ownerFaction ? ownerFaction.name : (tile.owner || 'Unclaimed'));
+    const ownerFaction = ownerCiv && (typeof FACTIONS !== 'undefined') ? FACTIONS[ownerCiv.factionId] : null;
+    const ownerName = ownerFaction ? ownerFaction.name : (tile.owner || 'Unclaimed');
+    const ownerColor = ownerFaction ? ownerFaction.color : 'rgba(160,155,140,0.5)';
 
     // Structure
-    let structureText = 'None';
-    if (tile.building) {
-      const allBuildings = {
-        ...(typeof BUILDINGS !== 'undefined' ? BUILDINGS : {}),
-        ...(typeof BRANCH_RESEARCH_BUILDINGS !== 'undefined' ? BRANCH_RESEARCH_BUILDINGS : {}),
-      };
-      const bldg = allBuildings[tile.building];
-      structureText = bldg ? `${bldg.icon || ''} ${bldg.name}` : tile.building;
-    }
-    this._setText('tile-structure', structureText);
+    const allBuildings = {
+      ...(typeof BUILDINGS !== 'undefined' ? BUILDINGS : {}),
+      ...(typeof BRANCH_RESEARCH_BUILDINGS !== 'undefined' ? BRANCH_RESEARCH_BUILDINGS : {}),
+    };
+    const bldg = tile.building ? allBuildings[tile.building] : null;
+    const bldgName = bldg ? bldg.name : tile.building;
 
     // Units on tile
     const units = tile.units || [];
-    if (units.length > 0) {
-      const unitDescs = units.map(u => {
-        const uType = (typeof UNIT_TYPES !== 'undefined') ? UNIT_TYPES[u.type] : null;
-        return uType ? `${uType.icon} ${uType.name}` : u.type;
-      });
-      this._setText('tile-unit', unitDescs.join(', '));
+    const unitDescs = units.map(u => {
+      const uType = (typeof UNIT_TYPES !== 'undefined') ? UNIT_TYPES[u.type] : null;
+      return uType ? uType.name : u.type;
+    });
+
+    // ── Build the tile-info section HTML ────────────────────────────────────
+    if (tileInfoEl) {
+      // Resource rows
+      const resLabels = {
+        energy: 'Energy', silicon: 'Silicon', research: 'Research',
+        data: 'Data', compute: 'Compute', rareEarth: 'Rare Earth', quantum: 'Quantum',
+      };
+      const resColors = {
+        energy: 'var(--color-energy)', silicon: 'var(--color-silicon)',
+        research: 'var(--color-research)', data: 'var(--color-data)',
+        compute: 'var(--color-compute)', rareEarth: 'var(--color-rareearth)',
+        quantum: 'var(--color-quantum)',
+      };
+
+      const resRowsHtml = Object.entries(baseYields)
+        .filter(([, v]) => v !== 0)
+        .map(([k, v]) => {
+          const label = resLabels[k] || k;
+          const color = resColors[k] || '#c8c0a0';
+          const sign  = v > 0 ? '+' : '';
+          return `<div class="resource-row">
+            <span class="resource-label">${label}</span>
+            <span class="resource-value" style="color:${color}">${sign}${v}</span>
+          </div>`;
+        }).join('');
+
+      const buildingHtml = bldgName
+        ? `<div class="tile-building-info">${bldgName}</div>`
+        : '';
+
+      const unitHtml = unitDescs.length > 0
+        ? `<div class="tile-building-info" style="color:#c8c8e0;margin-top:4px;">${unitDescs.join(', ')}</div>`
+        : '';
+
+      tileInfoEl.innerHTML = `
+        <div class="tile-type-name">${typeName}</div>
+        ${tileType?.description ? `<div class="tile-description">${tileType.description}</div>` : ''}
+        ${resRowsHtml ? `<div class="tile-resources">${resRowsHtml}</div>` : ''}
+        <span class="tile-owner-badge" style="color:${ownerColor};border-color:${ownerColor}">${ownerName}</span>
+        ${buildingHtml}
+        ${unitHtml}
+      `;
     } else {
-      this._setText('tile-unit', 'None');
+      // Fallback: update legacy element IDs if they exist
+      this._setText('tile-type-name', typeName);
+      this._setText('tile-yields', this._formatResources(baseYields) || '—');
+      this._setText('tile-owner', ownerName);
+      const structureText = bldgName || 'None';
+      this._setText('tile-structure', structureText);
+      this._setText('tile-unit', unitDescs.length > 0 ? unitDescs.join(', ') : 'None');
     }
 
     // ── Action buttons ──────────────────────────────────────────────────────
-    // Clear previous action buttons
     const actionsEl = document.getElementById('unit-actions');
     if (actionsEl) actionsEl.innerHTML = '';
 
@@ -710,8 +748,8 @@ const UI = {
       // Train unit button
       if (isPlayerTile && actionsEl) {
         const btnTrain = document.createElement('button');
-        btnTrain.className = 'btn-sm btn-train';
-        btnTrain.textContent = '+ Train Unit';
+        btnTrain.className = 'tile-action-btn train';
+        btnTrain.textContent = 'Train Unit';
         btnTrain.addEventListener('click', () => this._showTrainMenu(q, r));
         actionsEl.appendChild(btnTrain);
       }
@@ -729,8 +767,8 @@ const UI = {
 
         if (isAdjacent) {
           const btnClaim = document.createElement('button');
-          btnClaim.className = 'btn-sm btn-claim';
-          btnClaim.textContent = '⚑ Claim Tile';
+          btnClaim.className = 'tile-action-btn claim';
+          btnClaim.textContent = 'Claim Territory';
           btnClaim.addEventListener('click', () => {
             if (typeof GameEngine !== 'undefined' && GameEngine.expandTerritory) {
               GameEngine.expandTerritory(playerCiv.id, q, r);
@@ -742,16 +780,15 @@ const UI = {
         }
       }
 
-      // Attack button: enemy unit on this tile or adjacent
+      // Attack button: enemy units on this tile
       if (actionsEl) {
         const enemyUnits = units.filter(u => u.civId && u.civId !== playerCiv.id);
         if (enemyUnits.length > 0) {
           const btnAttack = document.createElement('button');
-          btnAttack.className = 'btn-sm btn-attack';
-          btnAttack.textContent = '⚔️ Attack';
+          btnAttack.className = 'tile-action-btn attack';
+          btnAttack.textContent = 'Launch Attack';
           btnAttack.addEventListener('click', () => {
             if (typeof GameEngine !== 'undefined' && GameEngine.moveUnit) {
-              // Find a player unit adjacent to this tile and move/attack
               const playerUnit = playerCiv.units && playerCiv.units.find(u => {
                 const d = typeof hexDistance !== 'undefined' ? hexDistance(u.q, u.r, q, r) : 999;
                 return d <= 1 && !u.attacked;
@@ -778,6 +815,7 @@ const UI = {
 
   /**
    * Populate #build-menu with buildings the player can construct at (q, r).
+   * Buildings are grouped into CIV-style categories.
    * @param {number} q
    * @param {number} r
    */
@@ -803,71 +841,109 @@ const UI = {
         : []
     );
 
-    for (const [bId, bldg] of Object.entries(allBuildings)) {
-      // Check concept requirements
-      const missingReqs = (bldg.requires || []).filter(req => !playerConcepts.includes(req));
+    // Categorise buildings
+    const CATEGORIES = {
+      basic:    { label: 'Basic Infrastructure', ids: [] },
+      research: { label: 'Research',             ids: [] },
+      military: { label: 'Military',             ids: [] },
+      advanced: { label: 'Advanced',             ids: [] },
+    };
 
-      // Check affordability
-      const costEntries = Object.entries(bldg.cost || {});
-      const canAfford   = costEntries.every(([res, need]) => (playerRes[res] || 0) >= need);
-
-      const costStr = costEntries.map(([res, n]) => `${n} ${res}`).join(', ') || 'Free';
-
-      const btn = document.createElement('button');
-      btn.className = `build-btn${(!canAfford || missingReqs.length > 0) ? ' build-btn-disabled' : ''}`;
-      btn.disabled  = !canAfford || missingReqs.length > 0;
-
-      let reqNote = '';
-      if (missingReqs.length > 0) {
-        const conceptNames = missingReqs.map(r => {
-          const c = (typeof CONCEPTS !== 'undefined') ? CONCEPTS[r] : null;
-          return c ? c.name : r;
-        });
-        reqNote = `<span class="build-req-missing">Requires: ${conceptNames.join(', ')}</span>`;
-      }
-
-      // Branch boost note
-      let branchNote = '';
-      if (bldg.branchBoost) {
-        const branch = (typeof RESEARCH_BRANCHES !== 'undefined') ? RESEARCH_BRANCHES[bldg.branchBoost.branch] : null;
-        const label  = branch ? branch.label : bldg.branchBoost.branch;
-        branchNote = `<span class="build-branch-boost">+${bldg.branchBoost.amount} ${label}</span>`;
-      }
-
-      btn.innerHTML = `
-        <span class="build-icon">${bldg.icon || '🏗️'}</span>
-        <span class="build-info">
-          <span class="build-name">${bldg.name}</span>
-          <span class="build-cost">${costStr}</span>
-          ${branchNote}
-          ${reqNote}
-        </span>
-      `;
-
-      btn.title = bldg.description || '';
-      btn.addEventListener('click', () => {
-        if (typeof GameEngine !== 'undefined' && GameEngine.buildOnTile) {
-          const ok = GameEngine.buildOnTile(playerCiv.id, q, r, bId);
-          if (ok) {
-            this.showNotification(`Built ${bldg.name}!`, 'success');
-            this.updateAllUI();
-            if (typeof Renderer !== 'undefined') Renderer.markDirty();
-          } else {
-            this.showNotification(`Cannot build ${bldg.name} here.`, 'warning');
-          }
-        }
-      });
-
-      buildMenu.appendChild(btn);
+    for (const bId of Object.keys(allBuildings)) {
+      const bldg = allBuildings[bId];
+      const category = bldg.category || (
+        /research|lab|compute/i.test(bId) ? 'research' :
+        /military|barracks|fort|wall/i.test(bId) ? 'military' :
+        (bldg.requires && bldg.requires.length > 0) ? 'advanced' : 'basic'
+      );
+      const cat = CATEGORIES[category] || CATEGORIES.basic;
+      cat.ids.push(bId);
     }
 
-    if (buildMenu.children.length === 0) {
+    let anyRendered = false;
+
+    for (const [, cat] of Object.entries(CATEGORIES)) {
+      if (cat.ids.length === 0) continue;
+
+      const header = document.createElement('div');
+      header.className = 'build-category-header';
+      header.textContent = cat.label;
+      buildMenu.appendChild(header);
+
+      for (const bId of cat.ids) {
+        const bldg = allBuildings[bId];
+
+        const missingReqs = (bldg.requires || []).filter(req => !playerConcepts.includes(req));
+        const costEntries = Object.entries(bldg.cost || {});
+        const canAfford   = costEntries.every(([res, need]) => (playerRes[res] || 0) >= need);
+        const isDisabled  = !canAfford || missingReqs.length > 0;
+
+        // Cost HTML with affordability colors
+        const costPartsHtml = costEntries.map(([res, n]) => {
+          const have     = playerRes[res] || 0;
+          const cls      = have >= n ? 'cost-affordable' : 'cost-not-affordable';
+          return `<span class="${cls}">${n} ${res}</span>`;
+        }).join('<span style="color:rgba(180,175,160,0.5)"> / </span>') || '<span class="cost-affordable">Free</span>';
+
+        // Branch boost HTML
+        let branchBoostHtml = '';
+        if (bldg.branchBoost) {
+          const branch = (typeof RESEARCH_BRANCHES !== 'undefined') ? RESEARCH_BRANCHES[bldg.branchBoost.branch] : null;
+          const label  = branch ? branch.label : bldg.branchBoost.branch;
+          branchBoostHtml = `<div class="build-item-branch-boost">+${bldg.branchBoost.amount} ${label}</div>`;
+        }
+
+        // Missing requirements HTML
+        let reqHtml = '';
+        if (missingReqs.length > 0) {
+          const conceptNames = missingReqs.map(rid => {
+            const c = (typeof CONCEPTS !== 'undefined') ? CONCEPTS[rid] : null;
+            return c ? c.name : rid;
+          });
+          reqHtml = `<div class="build-item-requires">Requires: ${conceptNames.join(', ')}</div>`;
+        }
+
+        const item = document.createElement('div');
+        item.className = `build-item${isDisabled ? ' disabled' : ''}`;
+        item.title = bldg.description || '';
+        item.innerHTML = `
+          <div class="build-item-name">${bldg.name}</div>
+          ${bldg.description ? `<div class="build-item-desc">${bldg.description}</div>` : ''}
+          <div class="build-item-cost">${costPartsHtml}</div>
+          ${branchBoostHtml}
+          ${reqHtml}
+        `;
+
+        if (!isDisabled) {
+          item.addEventListener('click', () => {
+            if (typeof GameEngine !== 'undefined' && GameEngine.buildOnTile) {
+              const ok = GameEngine.buildOnTile(playerCiv.id, q, r, bId);
+              if (ok) {
+                this.showNotification(`${bldg.name} constructed.`, 'success');
+                // Brief animation
+                item.classList.add('just-built');
+                setTimeout(() => item.classList.remove('just-built'), 500);
+                this.updateAllUI();
+                if (typeof Renderer !== 'undefined') Renderer.markDirty();
+              } else {
+                this.showNotification(`Cannot build ${bldg.name} here.`, 'warning');
+              }
+            }
+          });
+        }
+
+        buildMenu.appendChild(item);
+        anyRendered = true;
+      }
+    }
+
+    if (!anyRendered) {
       buildMenu.innerHTML = '<p class="tile-placeholder">No buildings available.</p>';
     }
   },
 
   /**
-   * Show a simple train-unit menu in the unit actions panel.
+   * Show a CIV-style train-unit menu in the unit actions panel.
    * @private
    */
   _showTrainMenu(q, r) {
@@ -885,31 +961,69 @@ const UI = {
         : []
     );
 
-    // Replace content with a mini unit menu
-    actionsEl.innerHTML = '<div class="train-title">Train Unit:</div>';
+    // Replace content with a CIV-style unit list
+    actionsEl.innerHTML = '';
+
+    const header = document.createElement('div');
+    header.className = 'build-category-header';
+    header.textContent = 'Select Unit to Train';
+    actionsEl.appendChild(header);
 
     for (const [uId, uType] of Object.entries(typeof UNIT_TYPES !== 'undefined' ? UNIT_TYPES : {})) {
       const missingReqs = (uType.requires || []).filter(req => !playerConcepts.includes(req));
       const costEntries = Object.entries(uType.cost || {});
       const canAfford   = costEntries.every(([res, n]) => (playerRes[res] || 0) >= n);
+      const isDisabled  = !canAfford || missingReqs.length > 0;
 
-      const btn = document.createElement('button');
-      btn.className = `btn-sm btn-train-unit${(!canAfford || missingReqs.length > 0) ? ' disabled' : ''}`;
-      btn.disabled  = !canAfford || missingReqs.length > 0;
-      btn.textContent = `${uType.icon} ${uType.name} (${costEntries.map(([r, n]) => `${n}${r}`).join(', ')})`;
-      btn.title = uType.description || '';
-      btn.addEventListener('click', () => {
-        if (typeof GameEngine !== 'undefined' && GameEngine.trainUnit) {
-          const ok = GameEngine.trainUnit(playerCiv.id, q, r, uId);
-          if (ok) {
-            this.showNotification(`Trained ${uType.name}!`, 'success');
-            this.updateAllUI();
-          } else {
-            this.showNotification(`Cannot train ${uType.name} here.`, 'warning');
+      // Build stats string from unit properties
+      const statParts = [];
+      if (uType.attack  != null) statParts.push(`ATK ${uType.attack}`);
+      if (uType.defense != null) statParts.push(`DEF ${uType.defense}`);
+      if (uType.move    != null) statParts.push(`MOV ${uType.move}`);
+      const statsStr = statParts.join('  ');
+
+      const costStr = costEntries.map(([res, n]) => `${n} ${res}`).join(', ') || 'Free';
+
+      let reqHtml = '';
+      if (missingReqs.length > 0) {
+        const conceptNames = missingReqs.map(rid => {
+          const c = (typeof CONCEPTS !== 'undefined') ? CONCEPTS[rid] : null;
+          return c ? c.name : rid;
+        });
+        reqHtml = `<div class="build-item-requires">Requires: ${conceptNames.join(', ')}</div>`;
+      }
+
+      const item = document.createElement('div');
+      item.className = `unit-type-item${isDisabled ? ' disabled' : ''}`;
+      item.title = uType.description || '';
+      item.innerHTML = `
+        <div class="unit-type-name">${uType.name}</div>
+        ${statsStr ? `<div class="unit-type-stats">${statsStr}</div>` : ''}
+        <div class="unit-type-cost">${costStr}</div>
+        ${reqHtml}
+      `;
+
+      if (!isDisabled) {
+        item.addEventListener('click', () => {
+          if (typeof GameEngine !== 'undefined' && GameEngine.trainUnit) {
+            const ok = GameEngine.trainUnit(playerCiv.id, q, r, uId);
+            if (ok) {
+              this.showNotification(`${uType.name} deployed.`, 'success');
+              item.classList.add('just-trained');
+              setTimeout(() => item.classList.remove('just-trained'), 500);
+              this.updateAllUI();
+            } else {
+              this.showNotification(`Cannot train ${uType.name} here.`, 'warning');
+            }
           }
-        }
-      });
-      actionsEl.appendChild(btn);
+        });
+      }
+
+      actionsEl.appendChild(item);
+    }
+
+    if (actionsEl.querySelectorAll('.unit-type-item').length === 0) {
+      actionsEl.innerHTML += '<p class="tile-placeholder">No units available.</p>';
     }
   },
 

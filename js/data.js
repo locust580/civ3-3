@@ -1649,3 +1649,1002 @@ const COMBO_FORMULA = {
   maxSuccessChance: 1.00,
   maxCostReduction: 0.60,          // at proficiency 10 in both branches, costs 60% less
 };
+
+// ---------------------------------------------------------------------------
+// EXTENDED_CONCEPTS  — 65+ new concept definitions (do not redefine existing ids)
+// ---------------------------------------------------------------------------
+const EXTENDED_CONCEPTS = {
+
+  // --- CLUSTER: biocomputing ---
+  dna_computing: {
+    id: 'dna_computing',
+    name: 'DNA Computing',
+    cluster: 'biocomputing',
+    x: 0.62,
+    y: 0.65,
+    description: 'DNA strands used as a computational substrate — parallel chemical reactions encoding logic operations in base-pair sequences, first demonstrated by Leonard Adleman in 1994.',
+    effects: { compute: 6, research: 4 },
+    tier: 4,
+  },
+  crispr_logic: {
+    id: 'crispr_logic',
+    name: 'CRISPR Logic',
+    cluster: 'biocomputing',
+    x: 0.70,
+    y: 0.72,
+    description: 'Gene editing as programmable biological logic — CRISPR-Cas9 repurposed as a cellular if-then-else system, executing genetic programs inside living cells.',
+    effects: { compute: 8, research: 6 },
+    tier: 5,
+  },
+  synthetic_biology: {
+    id: 'synthetic_biology',
+    name: 'Synthetic Biology',
+    cluster: 'biocomputing',
+    x: 0.78,
+    y: 0.78,
+    description: 'Engineering living systems as computers — designing genetic circuits, biological oscillators, and cell-based sensors that compute and respond to their environment.',
+    effects: { compute: 10, research: 5, data: 4 },
+    tier: 5,
+  },
+  wetware: {
+    id: 'wetware',
+    name: 'Wetware',
+    cluster: 'biocomputing',
+    x: 0.85,
+    y: 0.84,
+    description: 'Hybrid biological-silicon computing substrate — neurons cultured on chip, synaptic plasticity harnessed for computation, the ultimate merger of wet and dry circuitry.',
+    effects: { compute: 14, research: 8 },
+    tier: 6,
+  },
+  neural_interface: {
+    id: 'neural_interface',
+    name: 'Neural Interface',
+    cluster: 'biocomputing',
+    x: 0.82,
+    y: 0.78,
+    description: 'Direct brain-computer interface — electrode arrays reading and writing neural signals, enabling bidirectional communication between biological cognition and digital systems.',
+    effects: { compute: 12, research: 10, military: 5 },
+    tier: 6,
+  },
+
+  // --- CLUSTER: philosophical ---
+  godels_theorem: {
+    id: 'godels_theorem',
+    name: "Gödel's Incompleteness",
+    cluster: 'philosophical',
+    x: -0.38,
+    y: 0.48,
+    description: "Incompleteness: any sufficiently powerful formal system contains true statements that cannot be proven within the system — Gödel's 1931 proof shattered the dream of total formalization.",
+    effects: { research: 5 },
+    tier: 3,
+  },
+  chinese_room: {
+    id: 'chinese_room',
+    name: 'Chinese Room',
+    cluster: 'philosophical',
+    x: -0.22,
+    y: 0.55,
+    description: "Searle's thought experiment: a person following symbol-manipulation rules can produce correct Chinese responses without understanding Chinese — syntax is not semantics.",
+    effects: { research: 4, compute: -1 },
+    tier: 4,
+  },
+  mind_body_problem: {
+    id: 'mind_body_problem',
+    name: 'Mind-Body Problem',
+    cluster: 'philosophical',
+    x: -0.30,
+    y: 0.52,
+    description: "The hard problem of consciousness — how and why physical processes in the brain give rise to subjective experience, the central unsolved mystery of philosophy of mind.",
+    effects: { research: 3 },
+    tier: 3,
+  },
+  functionalism: {
+    id: 'functionalism',
+    name: 'Functionalism',
+    cluster: 'philosophical',
+    x: -0.18,
+    y: 0.58,
+    description: 'Mental states defined by their functional roles rather than their physical substrate — if something behaves like a mind, it is a mind, regardless of whether it runs on neurons or silicon.',
+    effects: { research: 5, compute: 2 },
+    tier: 4,
+  },
+  emergent_complexity: {
+    id: 'emergent_complexity',
+    name: 'Emergent Complexity',
+    cluster: 'philosophical',
+    x: -0.35,
+    y: 0.58,
+    description: 'Complex, unpredictable behavior emerging from simple rules and local interactions — ant colonies, markets, neural activity, and consciousness itself as emergent phenomena.',
+    effects: { research: 4, compute: 3 },
+    tier: 4,
+  },
+  simulation_hypothesis: {
+    id: 'simulation_hypothesis',
+    name: 'Simulation Hypothesis',
+    cluster: 'philosophical',
+    x: -0.15,
+    y: 0.62,
+    description: "Bostrom's argument that sufficiently advanced civilizations would run vast numbers of ancestor simulations — making it statistically probable that we are in one.",
+    effects: { research: 6, data: 4 },
+    tier: 5,
+  },
+
+  // --- CLUSTER: cultural_computing ---
+  islamic_algebra: {
+    id: 'islamic_algebra',
+    name: 'Islamic Algebra',
+    cluster: 'cultural_computing',
+    x: -0.88,
+    y: 0.30,
+    description: "Al-Khwarizmi's 9th-century treatise Al-Kitab al-mukhtasar — the word algorithm derives from his Latinized name, algebra from the title. The foundation of symbolic mathematics.",
+    effects: { research: 3, compute: 1 },
+    tier: 2,
+  },
+  indian_zero: {
+    id: 'indian_zero',
+    name: 'Indian Zero',
+    cluster: 'cultural_computing',
+    x: -0.82,
+    y: 0.28,
+    description: "Brahmagupta's Brahmasphutasiddhanta (628 CE): formalization of zero as a number with arithmetic rules and the positional decimal notation that underlies all modern computation.",
+    effects: { research: 2, compute: 2 },
+    tier: 2,
+  },
+  mayan_calendar: {
+    id: 'mayan_calendar',
+    name: 'Mayan Calendar',
+    cluster: 'cultural_computing',
+    x: -0.92,
+    y: 0.32,
+    description: 'The interlocking Long Count, Tzolkin, and Haab calendars — a sophisticated cyclical computational system requiring precise arithmetic and astronomical observation across centuries.',
+    effects: { research: 2, data: 2 },
+    tier: 2,
+  },
+  abacus: {
+    id: 'abacus',
+    name: 'Abacus',
+    cluster: 'cultural_computing',
+    x: -0.78,
+    y: 0.25,
+    description: 'The ancient counting frame — bead and wire or grooved stone, used from Mesopotamia to China to Rome. The first mechanical computation aid, still faster than calculators in skilled hands.',
+    effects: { compute: 1 },
+    tier: 1,
+  },
+  chinese_remainder_theorem: {
+    id: 'chinese_remainder_theorem',
+    name: 'Chinese Remainder Theorem',
+    cluster: 'cultural_computing',
+    x: -0.75,
+    y: 0.38,
+    description: "Sunzi Suanjing (3rd–5th century CE): if you know a number's remainders modulo pairwise coprime divisors, you can reconstruct it — foundational for cryptography and distributed computing.",
+    effects: { research: 4, compute: 2 },
+    tier: 3,
+  },
+  al_jazari_automata: {
+    id: 'al_jazari_automata',
+    name: 'Al-Jazari Automata',
+    cluster: 'cultural_computing',
+    x: -0.90,
+    y: 0.40,
+    description: "Ibn al-Razzaz al-Jazari's 12th-century Book of Ingenious Mechanical Devices — programmable musical automatons, elephant water clocks, and hand-washing robots programmable by peg-drum.",
+    effects: { production: 2, military: 1 },
+    tier: 2,
+  },
+
+  // --- CLUSTER: cybernetics ---
+  feedback_loop: {
+    id: 'feedback_loop',
+    name: 'Feedback Loop',
+    cluster: 'cybernetics',
+    x: 0.02,
+    y: 0.55,
+    description: "Norbert Wiener's control theory insight: systems that observe their own output and adjust accordingly — thermostats, autopilots, immune systems, and stock markets all governed by feedback.",
+    effects: { compute: 3, research: 2 },
+    tier: 3,
+  },
+  homeostasis: {
+    id: 'homeostasis',
+    name: 'Homeostasis',
+    cluster: 'cybernetics',
+    x: 0.12,
+    y: 0.58,
+    description: 'Self-regulating equilibrium in complex systems — body temperature, blood pH, ecological balance — the property that living systems maintain stable internal states despite external perturbation.',
+    effects: { production: 3, research: 2 },
+    tier: 3,
+  },
+  cybernetics: {
+    id: 'cybernetics',
+    name: 'Cybernetics',
+    cluster: 'cybernetics',
+    x: 0.08,
+    y: 0.64,
+    description: "Wiener's 1948 science of control and communication in animals and machines — the unified framework showing that feedback, information, and purpose apply equally to brains and servomechanisms.",
+    effects: { compute: 4, research: 4 },
+    tier: 4,
+  },
+  second_order_cybernetics: {
+    id: 'second_order_cybernetics',
+    name: 'Second-Order Cybernetics',
+    cluster: 'cybernetics',
+    x: 0.15,
+    y: 0.70,
+    description: "Heinz von Foerster's cybernetics of cybernetics: the observer is part of the system being observed — reflexivity, autonomy, and the epistemology of self-referential machines.",
+    effects: { research: 6, compute: 3 },
+    tier: 5,
+  },
+
+  // --- CLUSTER: linguistics ---
+  formal_grammar: {
+    id: 'formal_grammar',
+    name: 'Formal Grammar',
+    cluster: 'linguistics',
+    x: -0.48,
+    y: 0.58,
+    description: "Chomsky's Syntactic Structures (1957) and the hierarchy of formal languages — regular, context-free, context-sensitive, recursively enumerable — mapping the computational complexity of language.",
+    effects: { research: 4, compute: 2 },
+    tier: 3,
+  },
+  semiotics: {
+    id: 'semiotics',
+    name: 'Semiotics',
+    cluster: 'linguistics',
+    x: -0.42,
+    y: 0.62,
+    description: "Peirce and Saussure's study of signs, symbols, and meaning — the science of how representations relate to what they represent, essential for understanding language and AI alike.",
+    effects: { research: 3, data: 2 },
+    tier: 3,
+  },
+  symbolic_ai: {
+    id: 'symbolic_ai',
+    name: 'Symbolic AI',
+    cluster: 'linguistics',
+    x: -0.32,
+    y: 0.68,
+    description: "Good Old-Fashioned AI (GOFAI): intelligence through explicit symbol manipulation rules — expert systems, Prolog, LISP, the dominant paradigm from the 1950s through the 1980s.",
+    effects: { research: 5, compute: 4 },
+    tier: 4,
+  },
+  natural_language_processing: {
+    id: 'natural_language_processing',
+    name: 'Natural Language Processing',
+    cluster: 'linguistics',
+    x: -0.25,
+    y: 0.75,
+    description: 'Computational understanding of human language — parsing, translation, sentiment analysis, question answering — the long project of teaching machines to read and write.',
+    effects: { research: 6, data: 5, compute: 3 },
+    tier: 5,
+  },
+  word_embedding: {
+    id: 'word_embedding',
+    name: 'Word Embedding',
+    cluster: 'linguistics',
+    x: -0.18,
+    y: 0.80,
+    description: "Word2Vec, GloVe, FastText: words as vectors in high-dimensional semantic space where 'king' − 'man' + 'woman' ≈ 'queen' — the geometric encoding of meaning that made modern NLP possible.",
+    effects: { research: 7, data: 6 },
+    tier: 5,
+  },
+
+  // --- CLUSTER: cold_war_computing ---
+  sage_system: {
+    id: 'sage_system',
+    name: 'SAGE System',
+    cluster: 'cold_war_computing',
+    x: 0.38,
+    y: 0.42,
+    description: "Semi-Automatic Ground Environment — the US Air Force's 1958 continental defense network, the first real-time interactive computer system, linking radar stations through 50,000-line vacuum-tube computers.",
+    effects: { compute: 4, military: 2, data: 2 },
+    tier: 3,
+  },
+  univac: {
+    id: 'univac',
+    name: 'UNIVAC I',
+    cluster: 'cold_war_computing',
+    x: 0.32,
+    y: 0.40,
+    description: 'Universal Automatic Computer I (1951) — the first commercially produced computer in the United States, famously used by CBS to predict the 1952 presidential election correctly.',
+    effects: { compute: 5, data: 2 },
+    tier: 3,
+  },
+  apollo_guidance_computer: {
+    id: 'apollo_guidance_computer',
+    name: 'Apollo Guidance Computer',
+    cluster: 'cold_war_computing',
+    x: 0.48,
+    y: 0.48,
+    description: "The computer that took humans to the moon — MIT's 1966 design used rope-core memory and ran at 0.043 MHz, yet navigated Apollo 11 to a landing accurate to meters.",
+    effects: { compute: 6, research: 4 },
+    tier: 4,
+  },
+  eniac: {
+    id: 'eniac',
+    name: 'ENIAC',
+    cluster: 'cold_war_computing',
+    x: 0.35,
+    y: 0.44,
+    description: 'Electronic Numerical Integrator and Computer (1945) — 18,000 vacuum tubes, 30 tons, consuming 150 kilowatts, the first general-purpose electronic digital computer, built to calculate artillery firing tables.',
+    effects: { compute: 4, research: 2 },
+    tier: 3,
+  },
+  magnetic_core_memory: {
+    id: 'magnetic_core_memory',
+    name: 'Magnetic Core Memory',
+    cluster: 'cold_war_computing',
+    x: 0.42,
+    y: 0.46,
+    description: 'Tiny ferrite toroids threaded with copper wire — each core stores one bit by its magnetization state. The dominant form of computer RAM from the 1950s through the 1970s, robust and radiation-resistant.',
+    effects: { data: 4, compute: 2 },
+    tier: 3,
+  },
+
+  // --- CLUSTER: games_play ---
+  game_theory: {
+    id: 'game_theory',
+    name: 'Game Theory',
+    cluster: 'games_play',
+    x: 0.18,
+    y: 0.55,
+    description: "Von Neumann and Morgenstern's Theory of Games and Economic Behavior (1944), Nash equilibria — the mathematics of strategic interaction, now foundational for AI, economics, and military planning.",
+    effects: { military: 3, research: 3 },
+    tier: 3,
+  },
+  chess_program: {
+    id: 'chess_program',
+    name: 'Chess Program',
+    cluster: 'games_play',
+    x: 0.28,
+    y: 0.58,
+    description: "Deep Blue's 1997 defeat of Kasparov — decades of chess AI culminating in a machine that searched 200 million positions per second, proving brute-force search could master human strategy.",
+    effects: { compute: 5, military: 3 },
+    tier: 4,
+  },
+  game_of_life: {
+    id: 'game_of_life',
+    name: "Conway's Game of Life",
+    cluster: 'games_play',
+    x: 0.22,
+    y: 0.62,
+    description: "John Conway's 1970 cellular automaton — four simple rules on a grid producing gliders, oscillators, self-replicators, and Turing-complete computation from nothing but dead and alive cells.",
+    effects: { research: 4, compute: 3 },
+    tier: 3,
+  },
+  minimax_algorithm: {
+    id: 'minimax_algorithm',
+    name: 'Minimax Algorithm',
+    cluster: 'games_play',
+    x: 0.35,
+    y: 0.65,
+    description: 'Adversarial search in game trees — maximize your minimum outcome, minimize your maximum loss. The foundation of all two-player zero-sum game AI, from checkers to chess to Go.',
+    effects: { military: 4, compute: 3 },
+    tier: 4,
+  },
+  monte_carlo_tree_search: {
+    id: 'monte_carlo_tree_search',
+    name: 'Monte Carlo Tree Search',
+    cluster: 'games_play',
+    x: 0.42,
+    y: 0.70,
+    description: "Heuristic search guided by random playouts — the breakthrough that let AlphaGo defeat world champions by sampling game outcomes rather than exhaustively evaluating positions.",
+    effects: { military: 5, compute: 4, research: 3 },
+    tier: 5,
+  },
+
+  // --- CLUSTER: steampunk (extensions) ---
+  aether_conductor: {
+    id: 'aether_conductor',
+    name: 'Aether Conductor',
+    cluster: 'steampunk',
+    x: -0.82,
+    y: 0.55,
+    description: 'A hypothetical Victorian substance capable of transmitting thought-patterns between machines — the luminiferous aether repurposed as a medium for computational telepathy.',
+    effects: { energy: 4, research: 2 },
+    tier: 3,
+  },
+  vaporware: {
+    id: 'vaporware',
+    name: 'Vaporware',
+    cluster: 'steampunk',
+    x: -0.70,
+    y: 0.52,
+    description: 'The grand unbuilt machine — Babbage\'s Engine No. 2, Tesla\'s world wireless system, the perpetually-announced-never-delivered invention. Ideas that outpace reality but advance the field by setting audacious goals.',
+    effects: { research: 5 },
+    tier: 2,
+  },
+  difference_puncher: {
+    id: 'difference_puncher',
+    name: 'Difference Puncher',
+    cluster: 'steampunk',
+    x: -0.78,
+    y: 0.58,
+    description: 'A steam-powered punch card production automaton — feeding continuous card stock through rotating brass dies, cutting holes at machine speed to encode polynomial coefficients for Babbage\'s Engine.',
+    effects: { data: 3, production: 2 },
+    tier: 3,
+  },
+  analytical_society: {
+    id: 'analytical_society',
+    name: 'Analytical Society',
+    cluster: 'steampunk',
+    x: -0.72,
+    y: 0.62,
+    description: "Babbage and Herschel's 1812 Cambridge reform movement — advocating continental calculus notation over Newton's fluxions, modernizing British mathematics and training the generation that built the Analytical Engine.",
+    effects: { research: 5, compute: 2 },
+    tier: 3,
+  },
+
+  // --- AI extensions ---
+  attention_mechanism: {
+    id: 'attention_mechanism',
+    name: 'Attention Mechanism',
+    cluster: 'ai',
+    x: 0.02,
+    y: 0.85,
+    description: "Bahdanau's 2014 attention and Vaswani's 'Attention Is All You Need' (2017) — queries, keys, and values computing weighted relevance across all sequence positions simultaneously, the transformer's core innovation.",
+    effects: { research: 8, compute: 6 },
+    tier: 5,
+  },
+  generative_adversarial_network: {
+    id: 'generative_adversarial_network',
+    name: 'Generative Adversarial Network',
+    cluster: 'ai',
+    x: -0.08,
+    y: 0.82,
+    description: "Goodfellow's 2014 breakthrough: a generator network and discriminator network locked in adversarial training, producing photorealistic images, voices, and text so convincing they fool experts.",
+    effects: { data: 8, compute: 6 },
+    tier: 5,
+  },
+  transfer_learning: {
+    id: 'transfer_learning',
+    name: 'Transfer Learning',
+    cluster: 'ai',
+    x: 0.05,
+    y: 0.90,
+    description: 'Pre-train on vast data, fine-tune on specific tasks — knowledge from one domain transferred and adapted to another, making powerful AI accessible without billion-parameter training runs.',
+    effects: { research: 8, compute: 4 },
+    tier: 5,
+  },
+  embodied_ai: {
+    id: 'embodied_ai',
+    name: 'Embodied AI',
+    cluster: 'ai',
+    x: -0.40,
+    y: 0.90,
+    description: 'Intelligence grounded in physical world interaction — robots that learn to walk, grasp, and navigate by experiencing physics, rejecting disembodied symbol manipulation for sensorimotor grounding.',
+    effects: { military: 6, compute: 6, research: 5 },
+    tier: 6,
+  },
+  swarm_intelligence: {
+    id: 'swarm_intelligence',
+    name: 'Swarm Intelligence',
+    cluster: 'ai',
+    x: -0.48,
+    y: 0.85,
+    description: 'Emergent problem-solving from simple collective agents — ant colony optimization, particle swarms, bee-inspired algorithms — distributed intelligence with no central controller.',
+    effects: { military: 4, compute: 5, research: 4 },
+    tier: 5,
+  },
+  explainable_ai: {
+    id: 'explainable_ai',
+    name: 'Explainable AI',
+    cluster: 'ai',
+    x: -0.12,
+    y: 0.88,
+    description: 'LIME, SHAP, attention visualization — making AI decisions interpretable to humans, building trust and enabling oversight of systems that would otherwise be inscrutable black boxes.',
+    effects: { research: 7, data: 4 },
+    tier: 5,
+  },
+
+  // --- Quantum extensions ---
+  quantum_error_correction: {
+    id: 'quantum_error_correction',
+    name: 'Quantum Error Correction',
+    cluster: 'quantum',
+    x: -0.72,
+    y: 0.76,
+    description: 'Shor and Steane codes protecting quantum information from decoherence — encoding logical qubits redundantly across many physical qubits so that errors can be detected and corrected without measuring state.',
+    effects: { compute: 15, research: 10 },
+    tier: 6,
+  },
+  quantum_entanglement: {
+    id: 'quantum_entanglement',
+    name: 'Quantum Entanglement',
+    cluster: 'quantum',
+    x: -0.82,
+    y: 0.65,
+    description: "Einstein's 'spooky action at a distance' — entangled particles share quantum state instantaneously regardless of separation, the resource underlying quantum teleportation and quantum key distribution.",
+    effects: { compute: 8, data: 4 },
+    tier: 4,
+  },
+  quantum_cryptography: {
+    id: 'quantum_cryptography',
+    name: 'Quantum Cryptography',
+    cluster: 'quantum',
+    x: -0.78,
+    y: 0.72,
+    description: 'BB84 quantum key distribution — encoding cryptographic keys in photon polarization states that collapse on measurement, making eavesdropping physically detectable and encryption theoretically unbreakable.',
+    effects: { military: 8, data: 6 },
+    tier: 5,
+  },
+  topological_computing: {
+    id: 'topological_computing',
+    name: 'Topological Computing',
+    cluster: 'quantum',
+    x: -0.65,
+    y: 0.88,
+    description: 'Computing via braiding of non-Abelian anyons — topological qubits whose quantum information is encoded in global properties immune to local perturbation, promising inherently fault-tolerant quantum computation.',
+    effects: { compute: 18, research: 12 },
+    tier: 7,
+  },
+};
+
+// ---------------------------------------------------------------------------
+// EXTENDED_COMBINATIONS  — 80+ new combination recipes
+// ---------------------------------------------------------------------------
+const EXTENDED_COMBINATIONS = [
+
+  // ── Cultural → Mathematical bridges ──────────────────────────────────────
+  {
+    ingredients: ['indian_zero', 'binary_system'],
+    result: 'formal_logic',
+    researchCost: 10,
+  },
+  {
+    ingredients: ['islamic_algebra', 'calculus'],
+    result: 'information_theory',
+    researchCost: 18,
+  },
+  {
+    ingredients: ['abacus', 'steam_power'],
+    result: 'leibniz_wheel',
+    researchCost: 12,
+  },
+  {
+    ingredients: ['mayan_calendar', 'binary_system'],
+    result: 'formal_grammar',
+    researchCost: 15,
+  },
+  {
+    ingredients: ['al_jazari_automata', 'steam_power'],
+    result: 'aetheric_engine',
+    researchCost: 18,
+  },
+  {
+    ingredients: ['chinese_remainder_theorem', 'formal_logic'],
+    result: 'turing_completeness',
+    researchCost: 28,
+  },
+  {
+    ingredients: ['abacus', 'boolean_logic'],
+    result: 'binary_system',
+    researchCost: 8,
+  },
+
+  // ── Philosophical → AI bridges ────────────────────────────────────────────
+  {
+    ingredients: ['mind_body_problem', 'turing_test'],
+    result: 'chinese_room',
+    researchCost: 20,
+  },
+  {
+    ingredients: ['chinese_room', 'machine_learning'],
+    result: 'functionalism',
+    researchCost: 25,
+  },
+  {
+    ingredients: ['functionalism', 'artificial_neural_network'],
+    result: 'consciousness_upload',
+    researchCost: 70,
+  },
+  {
+    ingredients: ['godels_theorem', 'turing_completeness'],
+    result: 'simulation_hypothesis',
+    researchCost: 35,
+  },
+  {
+    ingredients: ['emergent_complexity', 'game_of_life'],
+    result: 'swarm_intelligence',
+    researchCost: 38,
+  },
+  {
+    ingredients: ['simulation_hypothesis', 'agi'],
+    result: 'consciousness_upload',
+    researchCost: 60,
+  },
+
+  // ── Linguistics → AI ──────────────────────────────────────────────────────
+  {
+    ingredients: ['formal_grammar', 'programming_language'],
+    result: 'natural_language_processing',
+    researchCost: 30,
+  },
+  {
+    ingredients: ['semiotics', 'formal_logic'],
+    result: 'symbolic_ai',
+    researchCost: 22,
+  },
+  {
+    ingredients: ['symbolic_ai', 'machine_learning'],
+    result: 'natural_language_processing',
+    researchCost: 28,
+  },
+  {
+    ingredients: ['natural_language_processing', 'attention_mechanism'],
+    result: 'large_language_model',
+    researchCost: 45,
+  },
+  {
+    ingredients: ['word_embedding', 'deep_learning'],
+    result: 'natural_language_processing',
+    researchCost: 32,
+  },
+  {
+    ingredients: ['word_embedding', 'attention_mechanism'],
+    result: 'large_language_model',
+    researchCost: 48,
+  },
+
+  // ── Cold War → Digital ────────────────────────────────────────────────────
+  {
+    ingredients: ['vacuum_tube', 'boolean_logic'],
+    result: 'eniac',
+    researchCost: 15,
+  },
+  {
+    ingredients: ['eniac', 'ram_memory'],
+    result: 'univac',
+    researchCost: 20,
+  },
+  {
+    ingredients: ['univac', 'programming_language'],
+    result: 'operating_system',
+    researchCost: 25,
+  },
+  {
+    ingredients: ['magnetic_core_memory', 'transistor'],
+    result: 'ram_memory',
+    researchCost: 18,
+  },
+  {
+    ingredients: ['apollo_guidance_computer', 'integrated_circuit'],
+    result: 'microprocessor',
+    researchCost: 28,
+  },
+  {
+    ingredients: ['sage_system', 'arpanet'],
+    result: 'internet',
+    researchCost: 22,
+  },
+
+  // ── Games → AI ────────────────────────────────────────────────────────────
+  {
+    ingredients: ['game_theory', 'programming_language'],
+    result: 'minimax_algorithm',
+    researchCost: 25,
+  },
+  {
+    ingredients: ['minimax_algorithm', 'chess_program'],
+    result: 'reinforcement_learning',
+    researchCost: 35,
+  },
+  {
+    ingredients: ['game_of_life', 'programming_language'],
+    result: 'emergent_complexity',
+    researchCost: 22,
+  },
+  {
+    ingredients: ['chess_program', 'deep_learning'],
+    result: 'monte_carlo_tree_search',
+    researchCost: 38,
+  },
+  {
+    ingredients: ['game_theory', 'reinforcement_learning'],
+    result: 'monte_carlo_tree_search',
+    researchCost: 40,
+  },
+
+  // ── Cybernetics ───────────────────────────────────────────────────────────
+  {
+    ingredients: ['boolean_logic', 'radio_wave'],
+    result: 'feedback_loop',
+    researchCost: 18,
+  },
+  {
+    ingredients: ['feedback_loop', 'operating_system'],
+    result: 'homeostasis',
+    researchCost: 25,
+  },
+  {
+    ingredients: ['feedback_loop', 'artificial_neural_network'],
+    result: 'cybernetics',
+    researchCost: 28,
+  },
+  {
+    ingredients: ['cybernetics', 'machine_learning'],
+    result: 'second_order_cybernetics',
+    researchCost: 35,
+  },
+  {
+    ingredients: ['homeostasis', 'distributed_computing'],
+    result: 'swarm_intelligence',
+    researchCost: 35,
+  },
+  {
+    ingredients: ['hero_pneumatics', 'cybernetics'],
+    result: 'homeostasis',
+    researchCost: 28,
+  },
+
+  // ── Biocomputing ──────────────────────────────────────────────────────────
+  {
+    ingredients: ['information_theory', 'formal_logic'],
+    result: 'dna_computing',
+    researchCost: 35,
+  },
+  {
+    ingredients: ['dna_computing', 'programming_language'],
+    result: 'synthetic_biology',
+    researchCost: 40,
+  },
+  {
+    ingredients: ['dna_computing', 'integrated_circuit'],
+    result: 'wetware',
+    researchCost: 50,
+  },
+  {
+    ingredients: ['synthetic_biology', 'artificial_neural_network'],
+    result: 'neural_interface',
+    researchCost: 55,
+  },
+  {
+    ingredients: ['wetware', 'operating_system'],
+    result: 'neural_interface',
+    researchCost: 50,
+  },
+  {
+    ingredients: ['dna_computing', 'machine_learning'],
+    result: 'crispr_logic',
+    researchCost: 40,
+  },
+  {
+    ingredients: ['neural_interface', 'agi'],
+    result: 'consciousness_upload',
+    researchCost: 65,
+  },
+
+  // ── Quantum extensions ────────────────────────────────────────────────────
+  {
+    ingredients: ['quantum_mechanics', 'encryption'],
+    result: 'quantum_cryptography',
+    researchCost: 45,
+  },
+  {
+    ingredients: ['quantum_mechanics', 'transistor'],
+    result: 'quantum_entanglement',
+    researchCost: 35,
+  },
+  {
+    ingredients: ['quantum_entanglement', 'quantum_computing'],
+    result: 'quantum_error_correction',
+    researchCost: 50,
+  },
+  {
+    ingredients: ['quantum_error_correction', 'large_language_model'],
+    result: 'topological_computing',
+    researchCost: 65,
+  },
+  {
+    ingredients: ['topological_computing', 'agi'],
+    result: 'consciousness_upload',
+    researchCost: 72,
+  },
+  {
+    ingredients: ['game_of_life', 'quantum_mechanics'],
+    result: 'topological_computing',
+    researchCost: 60,
+  },
+  {
+    ingredients: ['chess_program', 'quantum_computing'],
+    result: 'quantum_supremacy',
+    researchCost: 58,
+  },
+
+  // ── Steampunk extensions ─────────────────────────────────────────────────
+  {
+    ingredients: ['aetheric_engine', 'punch_card'],
+    result: 'difference_puncher',
+    researchCost: 20,
+  },
+  {
+    ingredients: ['leibniz_wheel', 'boolean_logic'],
+    result: 'analytical_society',
+    researchCost: 18,
+  },
+  {
+    ingredients: ['analytical_society', 'lovelace_algorithm'],
+    result: 'analytical_engine',
+    researchCost: 22,
+  },
+  {
+    ingredients: ['aether_conductor', 'clockwork_brain'],
+    result: 'aetheric_engine',
+    researchCost: 20,
+  },
+  {
+    ingredients: ['vaporware', 'analytical_engine'],
+    result: 'clockwork_turing',
+    researchCost: 28,
+  },
+
+  // ── More AI combinations ──────────────────────────────────────────────────
+  {
+    ingredients: ['deep_learning', 'distributed_computing'],
+    result: 'generative_adversarial_network',
+    researchCost: 45,
+  },
+  {
+    ingredients: ['artificial_neural_network', 'reinforcement_learning'],
+    result: 'generative_adversarial_network',
+    researchCost: 42,
+  },
+  {
+    ingredients: ['machine_learning', 'distributed_computing'],
+    result: 'transfer_learning',
+    researchCost: 35,
+  },
+  {
+    ingredients: ['deep_learning', 'transfer_learning'],
+    result: 'large_language_model',
+    researchCost: 48,
+  },
+  {
+    ingredients: ['programming_language', 'information_theory'],
+    result: 'attention_mechanism',
+    researchCost: 30,
+  },
+  {
+    ingredients: ['generative_adversarial_network', 'deep_learning'],
+    result: 'embodied_ai',
+    researchCost: 50,
+  },
+  {
+    ingredients: ['swarm_intelligence', 'embodied_ai'],
+    result: 'agi',
+    researchCost: 78,
+  },
+  {
+    ingredients: ['machine_learning', 'formal_logic'],
+    result: 'explainable_ai',
+    researchCost: 35,
+  },
+
+  // ── Cross-era interesting combos ──────────────────────────────────────────
+  {
+    ingredients: ['bronze_automaton', 'dna_computing'],
+    result: 'golem_organism',
+    researchCost: 42,
+    newConcept: {
+      id: 'golem_organism',
+      name: 'Golem Organism',
+      cluster: 'biocomputing',
+      x: 0.68,
+      y: 0.62,
+      description: 'A biological automaton — the ancient golem tradition meets synthetic biology. Programmed DNA instructs living cells to assemble into a purposeful form, guardian and servant.',
+      effects: { military: 5, production: 3 },
+      tier: 4,
+    },
+  },
+  {
+    ingredients: ['universal_characteristic', 'natural_language_processing'],
+    result: 'semantic_web',
+    researchCost: 35,
+  },
+  {
+    ingredients: ['al_jazari_automata', 'logic_gate'],
+    result: 'programmable_automaton',
+    researchCost: 25,
+    newConcept: {
+      id: 'programmable_automaton',
+      name: 'Programmable Automaton',
+      cluster: 'cultural_computing',
+      x: -0.82,
+      y: 0.45,
+      description: "Al-Jazari's sophisticated water clocks and musical robots reimagined as digital logic devices — the ancient tradition of programmable-by-peg-drum machinery extended into boolean switching circuits.",
+      effects: { military: 3, production: 3 },
+      tier: 3,
+    },
+  },
+  {
+    ingredients: ['mayan_calendar', 'information_theory'],
+    result: 'data_compression',
+    researchCost: 28,
+    newConcept: {
+      id: 'data_compression',
+      name: 'Data Compression',
+      cluster: 'mathematical',
+      x: 0.18,
+      y: 0.45,
+      description: 'Efficient encoding of information — Huffman, LZW, DEFLATE, JPEG. All compression owes to Shannon entropy theory: representing frequent patterns with fewer bits, rare patterns with more.',
+      effects: { data: 6, compute: 3 },
+      tier: 4,
+    },
+  },
+  {
+    ingredients: ['data_compression', 'internet'],
+    result: 'world_wide_web',
+    researchCost: 32,
+  },
+  {
+    ingredients: ['data_compression', 'deep_learning'],
+    result: 'generative_adversarial_network',
+    researchCost: 44,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// EXTENDED_CLUSTER_META — color and label data for new clusters
+// ---------------------------------------------------------------------------
+const EXTENDED_CLUSTER_META = {
+  biocomputing: {
+    color: '#4CAF50',
+    label: 'Biocomputing',
+    description: 'Biological and hybrid computing systems — DNA logic, synthetic biology, wetware, and direct neural interfaces.',
+  },
+  philosophical: {
+    color: '#9C27B0',
+    label: 'Philosophy of Mind',
+    description: 'Consciousness, cognition, and computation theory — Gödel, Searle, functionalism, and the hard problem of mind.',
+  },
+  cultural_computing: {
+    color: '#FF9800',
+    label: 'Cultural Computing',
+    description: 'Computing traditions across cultures and civilizations — Islamic algebra, Indian zero, Mayan calendrics, and al-Jazari automata.',
+  },
+  cybernetics: {
+    color: '#00BCD4',
+    label: 'Cybernetics',
+    description: 'Control, communication, and feedback systems — Wiener\'s unified science of regulation in animals and machines.',
+  },
+  linguistics: {
+    color: '#FF5722',
+    label: 'Computational Linguistics',
+    description: 'Language, symbols, and meaning as computation — formal grammars, semiotics, symbolic AI, and the path to natural language understanding.',
+  },
+  cold_war_computing: {
+    color: '#607D8B',
+    label: 'Cold War Computing',
+    description: 'Mid-century military and commercial computing — ENIAC, UNIVAC, SAGE, magnetic core memory, and the Apollo Guidance Computer.',
+  },
+  games_play: {
+    color: '#E91E63',
+    label: 'Games & Play',
+    description: 'Strategic reasoning and game-playing AI — game theory, chess programs, cellular automata, and Monte Carlo tree search.',
+  },
+};
+
+
+// ─── MERGE EXTENDED DATA INTO LIVE GAME CONSTANTS ─────────────────────────────
+// This runs after all consts are defined so CONCEPTS, COMBINATIONS, CLUSTER_META
+// automatically include the extended content everywhere in the engine.
+(function mergeExtendedData() {
+  if (typeof EXTENDED_CONCEPTS !== 'undefined') {
+    Object.assign(CONCEPTS, EXTENDED_CONCEPTS);
+  }
+  if (typeof EXTENDED_COMBINATIONS !== 'undefined') {
+    COMBINATIONS.push(...EXTENDED_COMBINATIONS);
+  }
+  if (typeof EXTENDED_CLUSTER_META !== 'undefined') {
+    Object.assign(CLUSTER_META, EXTENDED_CLUSTER_META);
+  }
+  if (typeof CLUSTER_TO_BRANCH !== 'undefined' && typeof EXTENDED_CLUSTER_META !== 'undefined') {
+    // Map new clusters to nearest branch
+    const newClusterBranches = {
+      biocomputing:      'cognitive',
+      philosophical:     'cognitive',
+      cultural_computing:'archaeotech',
+      cybernetics:       'networks',
+      linguistics:       'cognitive',
+      cold_war_computing:'computation',
+      games_play:        'computation',
+    };
+    Object.assign(CLUSTER_TO_BRANCH, newClusterBranches);
+  }
+})();

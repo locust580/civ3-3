@@ -265,36 +265,577 @@ const Renderer = {
   // ---------------------------------------------------------------------------
 
   /**
-   * Fill a hex with terrain color, apply fog of war, and draw a texture pattern.
+   * Fill a hex with terrain-specific canvas illustrations.
    */
   drawHexTerrain(ctx, tile, isExplored, isSelected, isHovered, size) {
-    const tileData = (typeof TILE_TYPES !== 'undefined') ? TILE_TYPES[tile.type] : null;
-    const baseColor = tileData ? tileData.color : '#333333';
-    const q = tile.q;
-    const r = tile.r;
+    const q = tile.q, r = tile.r;
 
-    if (!isExplored) {
-      // Fog of war: very dark tile
-      this.drawHex(ctx, q, r, '#0a0a10', '#111118', 0.5, size);
+    // VOID / UNEXPLORED: handled by _drawFogHex (animated fog)
+    if (tile.type === 'void_zone') {
+      this._drawVoidHex(ctx, q, r, size, Date.now());
       return;
     }
 
-    // Slight colour variation using position as seed
-    const variation = ((q * 7 + r * 13) % 7 - 3) * 0.012;
-    const fillColor = this._shiftColor(baseColor, variation);
+    if (!isExplored) {
+      this._drawFogHex(ctx, q, r, size);
+      return;
+    }
 
-    // Hovered: slightly brighter
-    const finalFill = isHovered ? this._shiftColor(fillColor, 0.08) : fillColor;
+    // Clip to hex shape
+    this._clipToHex(ctx, q, r, size);
 
-    // Base hex fill
-    this.drawHex(ctx, q, r, finalFill, '#1a1a28', 0.8, size);
+    // Draw terrain-specific content
+    switch(tile.type) {
+      case 'circuit_plains':   this._drawCircuitPlains(ctx, q, r, size); break;
+      case 'silicon_valley':   this._drawSiliconValley(ctx, q, r, size); break;
+      case 'data_swamp':       this._drawDataSwamp(ctx, q, r, size); break;
+      case 'energy_geysers':   this._drawEnergyGeysers(ctx, q, r, size); break;
+      case 'quantum_fields':   this._drawQuantumFields(ctx, q, r, size); break;
+      case 'memory_mountains': this._drawMemoryMountains(ctx, q, r, size); break;
+      case 'thermal_wastes':   this._drawThermalWastes(ctx, q, r, size); break;
+      case 'logic_forest':     this._drawLogicForest(ctx, q, r, size); break;
+      case 'cooling_lake':     this._drawCoolingLake(ctx, q, r, size); break;
+      case 'rare_earth':       this._drawRareEarth(ctx, q, r, size); break;
+      case 'ancient_ruins':    this._drawAncientRuins(ctx, q, r, size); break;
+      default: this._drawGenericTerrain(ctx, q, r, size, '#2a2a3a');
+    }
 
-    // Subtle texture pattern
-    this._drawHexTexture(ctx, q, r, tile.type, size);
+    ctx.restore(); // pop clip
 
-    // Selected: inner glow — drawn after texture
+    // Selection/hover highlight on top
     if (isSelected) {
-      this.drawHex(ctx, q, r, 'rgba(0,220,255,0.10)', '#00e5ff', 2.5, size);
+      this.drawHex(ctx, q, r, 'rgba(0,220,255,0.12)', '#00e5ff', 2.5, size);
+    } else if (isHovered) {
+      this.drawHex(ctx, q, r, 'rgba(255,255,255,0.06)', 'rgba(255,255,255,0.3)', 1, size);
+    }
+  },
+
+  /** Save ctx and clip subsequent drawing to the hex polygon at (q,r). */
+  _clipToHex(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.save();
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (Math.PI / 180) * (60 * i);
+      const x = cx + size * Math.cos(a);
+      const y = cy + size * Math.sin(a);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.clip();
+  },
+
+  _drawCircuitPlains(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    // Background
+    ctx.fillStyle = '#162216';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    // PCB trace grid
+    const step = size * 0.28;
+    ctx.strokeStyle = '#1a6b1a';
+    ctx.lineWidth = 1;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath(); ctx.moveTo(cx - size, cy + i * step); ctx.lineTo(cx + size, cy + i * step); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + i * step, cy - size); ctx.lineTo(cx + i * step, cy + size); ctx.stroke();
+    }
+    // Vias at intersections
+    ctx.fillStyle = '#c8a000';
+    for (let i = -2; i <= 2; i++) {
+      for (let j = -2; j <= 2; j++) {
+        ctx.beginPath();
+        ctx.arc(cx + i * step, cy + j * step, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    // Right-angle trace segments
+    const seed = q * 7 + r * 13;
+    ctx.strokeStyle = '#2a9b2a';
+    ctx.lineWidth = 1.5;
+    for (let t = 0; t < 3; t++) {
+      const ax = cx + ((seed * (t + 1) * 17) % 5 - 2) * step;
+      const ay = cy + ((seed * (t + 1) * 31) % 5 - 2) * step;
+      const bx = cx + ((seed * (t + 1) * 43) % 5 - 2) * step;
+      const by = cy + ((seed * (t + 1) * 59) % 5 - 2) * step;
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, ay); ctx.lineTo(bx, by); ctx.stroke();
+    }
+  },
+
+  _drawSiliconValley(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = '#2a1a3a';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    // Ground strip
+    ctx.fillStyle = '#3a2a4a';
+    ctx.fillRect(cx - size, cy + size * 0.45, size * 2, size * 0.55);
+    // Crystal formations
+    const seed = q * 7 + r * 13;
+    const colors = ['#6a3a9a', '#7a4aaa', '#8a5aba', '#9a5acc'];
+    for (let i = 0; i < 5; i++) {
+      const off = ((seed * (i + 1) * 11) % 11 - 5) * size * 0.1;
+      const h = size * (0.4 + (Math.abs(seed * (i + 1) * 7) % 5) * 0.1);
+      const w = size * 0.09;
+      const bx = cx + off;
+      const by = cy + size * 0.45;
+      const color = colors[Math.abs(seed * (i + 1)) % colors.length];
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(bx, by - h);
+      ctx.lineTo(bx + w, by);
+      ctx.lineTo(bx - w, by);
+      ctx.closePath();
+      ctx.fill();
+      // Highlight edge
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(bx, by - h);
+      ctx.lineTo(bx + w, by);
+      ctx.stroke();
+    }
+  },
+
+  _drawDataSwamp(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = '#0a1a18';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    const seed = q * 7 + r * 13;
+    // Puddle ellipses
+    ctx.fillStyle = '#0d2a28';
+    for (let i = 0; i < 4; i++) {
+      const px = cx + ((seed * (i + 1) * 13) % 9 - 4) * size * 0.09;
+      const py = cy + ((seed * (i + 1) * 17) % 9 - 4) * size * 0.09;
+      const rx = size * (0.18 + (Math.abs(seed * (i + 1) * 3) % 5) * 0.04);
+      const ry = rx * 0.55;
+      ctx.beginPath();
+      ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Data bubbles
+    for (let i = 0; i < 10; i++) {
+      const bx = cx + ((seed * (i + 3) * 7) % 17 - 8) * size * 0.06;
+      const by = cy + ((seed * (i + 3) * 11) % 17 - 8) * size * 0.06;
+      ctx.beginPath();
+      ctx.arc(bx, by, 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,255,170,0.35)';
+      ctx.fill();
+    }
+    // Data stream lines
+    ctx.strokeStyle = '#00cc88';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    for (let i = 0; i < 3; i++) {
+      const lx = cx + ((seed * (i + 1) * 23) % 7 - 3) * size * 0.13;
+      ctx.beginPath();
+      ctx.moveTo(lx, cy + size * 0.5);
+      ctx.lineTo(lx, cy);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  },
+
+  _drawEnergyGeysers(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = '#1a0a00';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    const seed = q * 7 + r * 13;
+    // Cracks
+    ctx.strokeStyle = '#3a1a00';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+      const a = (seed * (i + 1) * 37 % 360) * Math.PI / 180;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(a) * size * 0.65, cy + Math.sin(a) * size * 0.65);
+      ctx.stroke();
+    }
+    // Geyser vent — animated pulsing
+    const pulse = 0.85 + 0.15 * Math.sin(Date.now() * 0.003);
+    ctx.beginPath();
+    ctx.arc(cx, cy, size * 0.11 * pulse, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff4400';
+    ctx.fill();
+    // Energy bursts
+    const burstColors = ['#ff8800', '#ffaa00', '#ff6600'];
+    for (let i = 0; i < 4; i++) {
+      const a = (seed * (i + 1) * 53 % 360) * Math.PI / 180;
+      const len = size * (0.3 + (Math.abs(seed * (i + 1) * 7) % 5) * 0.07);
+      ctx.strokeStyle = burstColors[i % burstColors.length];
+      ctx.lineWidth = Math.max(1, 2.5 - i * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+      ctx.stroke();
+    }
+  },
+
+  _drawQuantumFields(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = '#0f0020';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    // Probability wave rings
+    for (let i = 1; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, size * 0.22 * i, size * 0.12 * i, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(204,0,255,${0.18 - i * 0.04})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // Orbit paths
+    const t = Date.now() * 0.0005;
+    for (let i = 0; i < 2; i++) {
+      const angle = i * Math.PI / 2 + 0.5;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, size * 0.48, size * 0.22, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(136,0,255,0.5)`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+      // Particle on orbit
+      const pAngle = t * (i === 0 ? 1 : -1.3) + i * Math.PI;
+      const px = cx + Math.cos(pAngle + angle) * size * 0.48 * Math.cos(angle) - Math.sin(pAngle + angle) * size * 0.22 * Math.sin(angle);
+      const py = cy + Math.cos(pAngle + angle) * size * 0.48 * Math.sin(angle) + Math.sin(pAngle + angle) * size * 0.22 * Math.cos(angle);
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff00ff';
+      ctx.fill();
+    }
+    this._dirty = true;
+  },
+
+  _drawMemoryMountains(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = '#0f0f2a';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    const seed = q * 7 + r * 13;
+    const baseY = cy + size * 0.35;
+    // Mountains
+    const peaks = [
+      { ox: -0.35, h: 0.65 }, { ox: 0, h: 0.85 }, { ox: 0.35, h: 0.6 }, { ox: -0.18, h: 0.5 },
+    ];
+    for (const p of peaks) {
+      const px = cx + p.ox * size;
+      const ph = p.h * size;
+      const shade = Math.floor(0x3a + (p.h * 30));
+      ctx.fillStyle = `#${shade.toString(16).padStart(2,'0')}4a6a`;
+      ctx.beginPath();
+      ctx.moveTo(px - size * 0.22, baseY);
+      ctx.lineTo(px, baseY - ph);
+      ctx.lineTo(px + size * 0.22, baseY);
+      ctx.closePath();
+      ctx.fill();
+      // Memory stripes
+      ctx.strokeStyle = '#4a5a8a';
+      ctx.lineWidth = 0.7;
+      for (let s = 1; s <= 4; s++) {
+        const sy2 = baseY - ph * (s / 5);
+        const halfW = size * 0.22 * (1 - s / 5);
+        ctx.beginPath();
+        ctx.moveTo(px - halfW, sy2);
+        ctx.lineTo(px + halfW, sy2);
+        ctx.stroke();
+      }
+      // Snow tip
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.beginPath();
+      ctx.moveTo(px, baseY - ph);
+      ctx.lineTo(px + size * 0.04, baseY - ph * 0.88);
+      ctx.lineTo(px - size * 0.04, baseY - ph * 0.88);
+      ctx.closePath();
+      ctx.fill();
+    }
+  },
+
+  _drawThermalWastes(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = '#1a0500';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    const seed = q * 7 + r * 13;
+    // Cracked plate cracks
+    ctx.strokeStyle = '#2a0800';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 7; i++) {
+      const a = (seed * (i + 1) * 41 % 360) * Math.PI / 180;
+      const len = size * (0.3 + (Math.abs(seed * (i + 1) * 11) % 5) * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a + 0.3) * size * 0.1, cy + Math.sin(a + 0.3) * size * 0.1);
+      ctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+      ctx.stroke();
+    }
+    // Heat shimmer
+    for (let i = 0; i < 4; i++) {
+      const hx = cx + ((seed * (i + 1) * 19) % 9 - 4) * size * 0.12;
+      ctx.strokeStyle = 'rgba(255,68,0,0.12)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(hx, cy + size * 0.4);
+      ctx.bezierCurveTo(hx + 4, cy + size * 0.15, hx - 4, cy - size * 0.1, hx + 2, cy - size * 0.35);
+      ctx.stroke();
+    }
+    // Embers
+    ctx.fillStyle = '#ff6600';
+    for (let i = 0; i < 7; i++) {
+      const ex = cx + ((seed * (i + 5) * 13) % 15 - 7) * size * 0.07;
+      const ey = cy + ((seed * (i + 5) * 17) % 15 - 7) * size * 0.07;
+      ctx.beginPath();
+      ctx.arc(ex, ey, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  _drawLogicForest(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = '#051505';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    const seed = q * 7 + r * 13;
+    const baseY = cy + size * 0.4;
+    const treePositions = [
+      { ox: -0.35, h: 0.55 }, { ox: 0, h: 0.72 }, { ox: 0.35, h: 0.5 },
+      { ox: -0.18, h: 0.42 }, { ox: 0.2, h: 0.38 },
+    ];
+    const colors = ['#1a5a1a', '#1e641e', '#2a7a2a', '#216921', '#187818'];
+    for (let i = 0; i < treePositions.length; i++) {
+      const p = treePositions[i];
+      const tx = cx + p.ox * size;
+      const ty = baseY;
+      const th = p.h * size;
+      const tw = size * 0.18;
+      const col = colors[i % colors.length];
+      // Trunk
+      ctx.fillStyle = '#2a1a0a';
+      ctx.fillRect(tx - size * 0.025, ty, size * 0.05, size * 0.12);
+      // Canopy
+      if (i % 2 === 0) {
+        // Triangle
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.moveTo(tx, ty - th);
+        ctx.lineTo(tx + tw, ty);
+        ctx.lineTo(tx - tw, ty);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // NAND-like: flat bottom + arc top
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.moveTo(tx - tw, ty);
+        ctx.lineTo(tx + tw, ty);
+        ctx.arc(tx, ty - th * 0.55, th * 0.6, 0.1, Math.PI - 0.1);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Via dot at base
+      ctx.beginPath();
+      ctx.arc(tx, ty + size * 0.12, 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#c8a000';
+      ctx.fill();
+    }
+  },
+
+  _drawCoolingLake(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = '#020a18';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    // Ripple circles
+    for (let i = 1; i <= 5; i++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.12 * i, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(26,58,106,${0.55 - i * 0.08})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // Cooling fins (narrow rects from edge pointing inward)
+    ctx.fillStyle = '#1a3a6a';
+    const finAngles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
+    for (const a of finAngles) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(a);
+      ctx.fillRect(size * 0.6, -size * 0.05, size * 0.3, size * 0.1);
+      ctx.restore();
+    }
+    // Shimmer dots
+    const seed = q * 7 + r * 13;
+    ctx.fillStyle = 'rgba(200,230,255,0.45)';
+    for (let i = 0; i < 8; i++) {
+      const sx = cx + ((seed * (i + 1) * 13) % 11 - 5) * size * 0.07;
+      const sy = cy + ((seed * (i + 1) * 17) % 11 - 5) * size * 0.07;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  _drawRareEarth(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = '#0a1a0a';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    const seed = q * 7 + r * 13;
+    const mineralColors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44'];
+    const positions = [];
+    for (let i = 0; i < 15; i++) {
+      positions.push({
+        x: cx + ((seed * (i + 1) * 13 + i * 37) % 17 - 8) * size * 0.065,
+        y: cy + ((seed * (i + 1) * 17 + i * 53) % 17 - 8) * size * 0.065,
+        c: mineralColors[Math.abs(seed * (i + 1)) % mineralColors.length],
+      });
+    }
+    // Earth line connections (subtle)
+    ctx.strokeStyle = 'rgba(40,30,20,0.6)';
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < positions.length - 1; i += 3) {
+      ctx.beginPath();
+      ctx.moveTo(positions[i].x, positions[i].y);
+      ctx.lineTo(positions[i + 1].x, positions[i + 1].y);
+      ctx.stroke();
+    }
+    // Diamond crystals
+    for (const p of positions) {
+      const ds = size * 0.055;
+      ctx.fillStyle = p.c;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - ds);
+      ctx.lineTo(p.x + ds, p.y);
+      ctx.lineTo(p.x, p.y + ds);
+      ctx.lineTo(p.x - ds, p.y);
+      ctx.closePath();
+      ctx.fill();
+    }
+  },
+
+  _drawAncientRuins(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = '#1a1005';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    const seed = q * 7 + r * 13;
+    const baseY = cy + size * 0.4;
+    // Cracked floor lines
+    ctx.strokeStyle = '#3a2a10';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const fx = cx + ((seed * (i + 1) * 11) % 9 - 4) * size * 0.12;
+      const fa = (seed * (i + 2) * 37 % 180) * Math.PI / 180;
+      ctx.beginPath();
+      ctx.moveTo(fx, baseY);
+      ctx.lineTo(fx + Math.cos(fa) * size * 0.35, baseY + Math.sin(fa) * size * 0.25);
+      ctx.stroke();
+    }
+    // Broken columns
+    const colOffsets = [-0.33, 0, 0.33];
+    for (let i = 0; i < 3; i++) {
+      const colX = cx + colOffsets[i] * size;
+      const colH = size * (0.35 + (Math.abs(seed * (i + 1) * 7) % 5) * 0.06);
+      const colW = size * 0.1;
+      const notchH = size * 0.08;
+      // Column body
+      ctx.fillStyle = '#5a4a2a';
+      ctx.fillRect(colX - colW / 2, baseY - colH, colW, colH);
+      // Break notch
+      ctx.fillStyle = '#1a1005';
+      ctx.fillRect(colX - colW / 2, baseY - colH * 0.55, colW, notchH);
+    }
+    // Partial gear outline
+    const gr = size * 0.17;
+    ctx.strokeStyle = '#7a6a3a';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx + size * 0.3, cy - size * 0.05, gr, 0.3, Math.PI * 1.4);
+    ctx.stroke();
+    // Gear teeth stubs
+    for (let i = 0; i < 5; i++) {
+      const ta = 0.3 + i * (Math.PI * 1.1 / 4);
+      const tx = cx + size * 0.3 + Math.cos(ta) * gr;
+      const ty = cy - size * 0.05 + Math.sin(ta) * gr;
+      ctx.fillStyle = '#7a6a3a';
+      ctx.fillRect(tx - 2, ty - 2, 4, 4);
+    }
+  },
+
+  _drawGenericTerrain(ctx, q, r, size, color) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.fillStyle = color;
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+  },
+
+  _drawVoidHex(ctx, q, r, size, timestamp) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    ctx.save();
+    // Clip to hex
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (Math.PI / 180) * (60 * i);
+      const x = cx + size * Math.cos(a);
+      const y = cy + size * Math.sin(a);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.clip();
+    // Near-black background
+    ctx.fillStyle = '#000005';
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    // Animated fog wisps
+    for (let i = 0; i < 8; i++) {
+      const wx = cx + Math.sin(timestamp * 0.001 + q + r + i * 1.3) * size * 0.35;
+      const wy = cy + Math.cos(timestamp * 0.00073 + q - r + i * 0.9) * size * 0.35;
+      ctx.beginPath();
+      ctx.ellipse(wx, wy, size * 0.28, size * 0.14, i * 0.4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(40,40,80,0.15)';
+      ctx.fill();
+    }
+    // Occasional electricity
+    const elecPhase = (timestamp / 2000 + q * 7 + r * 13) % 1;
+    if (elecPhase < 0.15) {
+      // Seeded random from floor of timestamp bucket
+      const seed = q * 31 + r * 37 + Math.floor(timestamp / 2000);
+      ctx.strokeStyle = 'rgba(100,150,255,0.8)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const startX = cx - size * 0.4;
+      const endX = cx + size * 0.4;
+      ctx.moveTo(startX, cy);
+      const steps = 4;
+      for (let s = 1; s <= steps; s++) {
+        const fx = startX + (endX - startX) * (s / (steps + 1));
+        const fy = cy + (Math.abs(Math.sin(seed * s * 7.3 + 1.2)) * 2 - 1) * size * 0.22;
+        ctx.lineTo(fx, fy);
+      }
+      ctx.lineTo(endX, cy);
+      ctx.stroke();
+    }
+    ctx.restore();
+    this._dirty = true;
+  },
+
+  _drawFogHex(ctx, q, r, size) {
+    const cx = this._hexScreenX(q, r, size);
+    const cy = this._hexScreenY(q, r, size);
+    // Fill dark with hex primitive
+    this.drawHex(ctx, q, r, '#0a0a14', null, 0, size);
+    // Subtle noise dots for fog texture
+    const seed = q * 7 + r * 13;
+    ctx.fillStyle = 'rgba(30,30,50,0.3)';
+    for (let i = 0; i < 6; i++) {
+      const dx = ((seed * (i + 1) * 17) % 11 - 5) * size * 0.09;
+      const dy = ((seed * (i + 1) * 23) % 11 - 5) * size * 0.09;
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy + dy, 2, 0, Math.PI * 2);
+      ctx.fill();
     }
   },
 
@@ -368,7 +909,7 @@ const Renderer = {
   // ---------------------------------------------------------------------------
 
   /**
-   * Draw a building icon (emoji) at a tile center.
+   * Draw a building canvas illustration at a tile center.
    * @param {CanvasRenderingContext2D} ctx
    * @param {number} centerX
    * @param {number} centerY
@@ -376,19 +917,331 @@ const Renderer = {
    * @param {number} scale  - mapZoom
    */
   drawBuilding(ctx, centerX, centerY, buildingId, scale) {
-    const bldData = (typeof BUILDINGS !== 'undefined') ? BUILDINGS[buildingId] : null;
-    if (!bldData) return;
+    const s = Math.max(0.4, scale) * this.hexSize * 0.28; // icon size
+    ctx.save();
+    ctx.translate(centerX, centerY);
 
-    const icon = bldData.icon || '🏗️';
-    const fontSize = Math.max(8, Math.round(14 * scale));
-    ctx.font = `${fontSize}px serif`;
-    ctx.textAlign    = 'center';
+    switch(buildingId) {
+      case 'research_node':    this._drawBldResearchNode(ctx, s); break;
+      case 'data_farm':        this._drawBldDataFarm(ctx, s); break;
+      case 'silicon_extractor': this._drawBldSiliconExtractor(ctx, s); break;
+      case 'power_plant':      this._drawBldPowerPlant(ctx, s); break;
+      case 'copper_mine':      this._drawBldCopperMine(ctx, s); break;
+      case 'defense_array':    this._drawBldDefenseArray(ctx, s); break;
+      case 'military_forge':   this._drawBldMilitaryForge(ctx, s); break;
+      case 'advanced_lab':     this._drawBldAdvancedLab(ctx, s); break;
+      case 'quantum_lab':      this._drawBldQuantumLab(ctx, s); break;
+      case 'neural_cluster':   this._drawBldNeuralCluster(ctx, s); break;
+      case 'idea_accelerator': this._drawBldIdeaAccelerator(ctx, s); break;
+      default: this._drawBldGeneric(ctx, s, buildingId); break;
+    }
+    ctx.restore();
+  },
+
+  _drawBldResearchNode(ctx, s) {
+    // Magnifying glass: circle + handle
+    ctx.strokeStyle = '#00ccff';
+    ctx.lineWidth = Math.max(1, s * 0.12);
+    ctx.beginPath();
+    ctx.arc(-s * 0.1, -s * 0.1, s * 0.6, 0, Math.PI * 2);
+    ctx.stroke();
+    // Handle
+    ctx.fillStyle = '#00ccff';
+    ctx.fillRect(s * 0.28, s * 0.28, s * 0.35, s * 0.15);
+    // Circuit traces inside lens
+    ctx.strokeStyle = 'rgba(0,200,255,0.6)';
+    ctx.lineWidth = 1;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.45, -s * 0.1 + i * s * 0.22);
+      ctx.lineTo(s * 0.22, -s * 0.1 + i * s * 0.22);
+      ctx.stroke();
+    }
+  },
+
+  _drawBldDataFarm(ctx, s) {
+    // Server racks
+    const rackW = s * 1.2, rackH = s * 0.25;
+    for (let i = 0; i < 3; i++) {
+      const ry = -s * 0.55 + i * (rackH + s * 0.06);
+      ctx.fillStyle = '#2a4a2a';
+      ctx.fillRect(-rackW / 2, ry, rackW, rackH);
+      ctx.strokeStyle = '#3a6a3a';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-rackW / 2, ry, rackW, rackH);
+      // LEDs
+      const ledColors = ['#00ff88', '#ff8800'];
+      for (let j = 0; j < 4; j++) {
+        ctx.beginPath();
+        ctx.arc(-rackW * 0.35 + j * rackW * 0.22, ry + rackH * 0.5, s * 0.06, 0, Math.PI * 2);
+        ctx.fillStyle = ledColors[j % 2];
+        ctx.fill();
+      }
+    }
+    // Cable
+    ctx.strokeStyle = '#1a3a1a';
+    ctx.lineWidth = Math.max(1, s * 0.08);
+    ctx.beginPath();
+    ctx.moveTo(0, s * 0.35);
+    ctx.bezierCurveTo(s * 0.2, s * 0.55, -s * 0.1, s * 0.65, s * 0.05, s * 0.75);
+    ctx.stroke();
+  },
+
+  _drawBldSiliconExtractor(ctx, s) {
+    // Drill bit (triangle pointing down)
+    ctx.fillStyle = '#8844aa';
+    ctx.beginPath();
+    ctx.moveTo(0, s * 0.5);
+    ctx.lineTo(-s * 0.45, -s * 0.3);
+    ctx.lineTo(s * 0.45, -s * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    // Hash marks on drill
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 3; i++) {
+      const ty = -s * 0.3 + i * s * 0.2;
+      const hw = s * 0.45 * (1 - i * 0.25);
+      ctx.beginPath(); ctx.moveTo(-hw, ty); ctx.lineTo(hw, ty); ctx.stroke();
+    }
+    // Diamond crystal below
+    const ds = s * 0.18;
+    ctx.fillStyle = '#cc88ff';
+    ctx.beginPath();
+    ctx.moveTo(0, s * 0.65);
+    ctx.lineTo(ds, s * 0.78);
+    ctx.lineTo(0, s * 0.9);
+    ctx.lineTo(-ds, s * 0.78);
+    ctx.closePath();
+    ctx.fill();
+  },
+
+  _drawBldPowerPlant(ctx, s) {
+    // Rounded container
+    ctx.fillStyle = '#2a1800';
+    ctx.beginPath();
+    ctx.roundRect(-s * 0.75, -s * 0.75, s * 1.5, s * 1.5, s * 0.15);
+    ctx.fill();
+    // Lightning bolt
+    ctx.fillStyle = '#ff8800';
+    ctx.beginPath();
+    ctx.moveTo(s * 0.1, -s * 0.65);
+    ctx.lineTo(-s * 0.28, s * 0.05);
+    ctx.lineTo(s * 0.05, s * 0.05);
+    ctx.lineTo(-s * 0.1, s * 0.65);
+    ctx.lineTo(s * 0.28, -s * 0.05);
+    ctx.lineTo(s * 0.0, -s * 0.05);
+    ctx.closePath();
+    ctx.fill();
+    // Radiating lines
+    ctx.strokeStyle = 'rgba(255,180,0,0.5)';
+    ctx.lineWidth = 1;
+    const radAngles = [Math.PI * 0.1, Math.PI * 0.4, Math.PI * 0.6, Math.PI * 0.9];
+    for (const a of radAngles) {
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * s * 0.5, Math.sin(a) * s * 0.5);
+      ctx.lineTo(Math.cos(a) * s * 0.8, Math.sin(a) * s * 0.8);
+      ctx.stroke();
+    }
+  },
+
+  _drawBldCopperMine(ctx, s) {
+    // Circular mine shaft
+    ctx.strokeStyle = '#cc5500';
+    ctx.lineWidth = Math.max(1.5, s * 0.12);
+    ctx.beginPath();
+    ctx.arc(0, 0, s * 0.55, 0, Math.PI * 2);
+    ctx.stroke();
+    // Cross lines
+    ctx.lineWidth = Math.max(1, s * 0.08);
+    ctx.beginPath(); ctx.moveTo(-s * 0.55, 0); ctx.lineTo(s * 0.55, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -s * 0.55); ctx.lineTo(0, s * 0.55); ctx.stroke();
+    // Nuggets
+    const nuggetPos = [[-0.7, -0.5], [0.72, -0.4], [-0.6, 0.6], [0.65, 0.55]];
+    ctx.fillStyle = '#cc5500';
+    for (const [nx, ny] of nuggetPos) {
+      ctx.beginPath();
+      ctx.arc(nx * s, ny * s, s * 0.11, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  _drawBldDefenseArray(ctx, s) {
+    // Shield pentagon
+    ctx.fillStyle = '#1a2a4a';
+    ctx.strokeStyle = '#4488ff';
+    ctx.lineWidth = Math.max(1.5, s * 0.1);
+    ctx.beginPath();
+    ctx.moveTo(0, -s * 0.85);
+    ctx.lineTo(s * 0.75, -s * 0.3);
+    ctx.lineTo(s * 0.6, s * 0.65);
+    ctx.lineTo(-s * 0.6, s * 0.65);
+    ctx.lineTo(-s * 0.75, -s * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Cross on shield
+    ctx.strokeStyle = '#4488ff';
+    ctx.lineWidth = Math.max(1, s * 0.08);
+    ctx.beginPath(); ctx.moveTo(0, -s * 0.6); ctx.lineTo(0, s * 0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-s * 0.5, s * 0.05); ctx.lineTo(s * 0.5, s * 0.05); ctx.stroke();
+  },
+
+  _drawBldMilitaryForge(ctx, s) {
+    // Anvil: wide rect on narrow rect
+    ctx.fillStyle = '#884444';
+    ctx.fillRect(-s * 0.6, -s * 0.2, s * 1.2, s * 0.55); // top
+    ctx.fillRect(-s * 0.28, s * 0.35, s * 0.56, s * 0.35); // base
+    ctx.strokeStyle = '#aa6666';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-s * 0.6, -s * 0.2, s * 1.2, s * 0.55);
+    // Flame lines above
+    const flameColors = ['#ff4400', '#ff6600', '#ff8800'];
+    ctx.lineWidth = Math.max(1, s * 0.07);
+    for (let i = 0; i < 3; i++) {
+      const fx = (i - 1) * s * 0.28;
+      ctx.strokeStyle = flameColors[i];
+      ctx.beginPath();
+      ctx.moveTo(fx, -s * 0.25);
+      ctx.bezierCurveTo(fx + s * 0.08, -s * 0.48, fx - s * 0.08, -s * 0.6, fx, -s * 0.78);
+      ctx.stroke();
+    }
+  },
+
+  _drawBldAdvancedLab(ctx, s) {
+    // Erlenmeyer flask: neck + trapezoid body
+    ctx.fillStyle = 'rgba(40,120,120,0.3)';
+    ctx.strokeStyle = '#44aaaa';
+    ctx.lineWidth = Math.max(1, s * 0.1);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.12, -s * 0.8); // neck left
+    ctx.lineTo(-s * 0.12, -s * 0.25); // neck -> body
+    ctx.lineTo(-s * 0.62, s * 0.7);
+    ctx.lineTo(s * 0.62, s * 0.7);
+    ctx.lineTo(s * 0.12, -s * 0.25);
+    ctx.lineTo(s * 0.12, -s * 0.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Opening at top
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.18, -s * 0.8);
+    ctx.lineTo(s * 0.18, -s * 0.8);
+    ctx.stroke();
+    // Circuit traces going into flask
+    ctx.strokeStyle = 'rgba(0,200,200,0.6)';
+    ctx.lineWidth = 1;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * s * 0.22, s * 0.2);
+      ctx.lineTo(i * s * 0.35, s * 0.5);
+      ctx.stroke();
+    }
+  },
+
+  _drawBldQuantumLab(ctx, s) {
+    // Center circle
+    ctx.fillStyle = '#ff00ff';
+    ctx.beginPath();
+    ctx.arc(0, 0, s * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    // Two elliptical orbits
+    const orbitAngles = [Math.PI / 6, Math.PI * 5 / 6];
+    ctx.strokeStyle = '#ff00ff';
+    ctx.lineWidth = Math.max(1, s * 0.07);
+    for (const a of orbitAngles) {
+      ctx.save();
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.78, s * 0.28, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // Electron dots
+    const ePositions = [[s * 0.78, 0], [-s * 0.39, s * 0.24]];
+    ctx.fillStyle = '#ffffff';
+    for (const [ex, ey] of ePositions) {
+      ctx.beginPath();
+      ctx.arc(ex, ey, s * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  _drawBldNeuralCluster(ctx, s) {
+    // 3 layer neural network: 2 input, 2 hidden, 1 output
+    const layers = [
+      [{ x: -s * 0.7, y: -s * 0.28 }, { x: -s * 0.7, y: s * 0.28 }],
+      [{ x: 0, y: -s * 0.28 }, { x: 0, y: s * 0.28 }],
+      [{ x: s * 0.7, y: 0 }],
+    ];
+    // Connections
+    ctx.strokeStyle = 'rgba(0,170,255,0.45)';
+    ctx.lineWidth = 1;
+    for (let li = 0; li < layers.length - 1; li++) {
+      for (const a of layers[li]) {
+        for (const b of layers[li + 1]) {
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+      }
+    }
+    // Nodes
+    ctx.fillStyle = '#00aaff';
+    for (const layer of layers) {
+      for (const n of layer) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, s * 0.14, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  },
+
+  _drawBldIdeaAccelerator(ctx, s) {
+    // Lightbulb: circle top + rectangle base
+    ctx.fillStyle = 'rgba(255,255,0,0.2)';
+    ctx.strokeStyle = '#ffff00';
+    ctx.lineWidth = Math.max(1, s * 0.1);
+    ctx.beginPath();
+    ctx.arc(0, -s * 0.28, s * 0.52, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Base rectangle
+    ctx.fillStyle = '#ffff00';
+    ctx.fillRect(-s * 0.24, s * 0.24, s * 0.48, s * 0.32);
+    // Filament lines inside bulb
+    ctx.strokeStyle = '#ffdd00';
+    ctx.lineWidth = Math.max(1, s * 0.07);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.18, s * 0.05); ctx.lineTo(0, -s * 0.15); ctx.lineTo(s * 0.18, s * 0.05);
+    ctx.stroke();
+    // Radiating lines
+    ctx.strokeStyle = 'rgba(255,255,0,0.5)';
+    ctx.lineWidth = 1;
+    const angles = [Math.PI * 0.05, Math.PI * 0.25, Math.PI * 0.75, Math.PI * 0.95,
+                    -Math.PI * 0.15, -Math.PI * 0.5];
+    for (const a of angles) {
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * s * 0.6, -s * 0.28 + Math.sin(a) * s * 0.6);
+      ctx.lineTo(Math.cos(a) * s * 0.85, -s * 0.28 + Math.sin(a) * s * 0.85);
+      ctx.stroke();
+    }
+  },
+
+  _drawBldGeneric(ctx, s, buildingId) {
+    // Rounded rectangle
+    ctx.fillStyle = '#666688';
+    ctx.strokeStyle = '#8888aa';
+    ctx.lineWidth = Math.max(1, s * 0.1);
+    ctx.beginPath();
+    ctx.roundRect(-s * 0.7, -s * 0.7, s * 1.4, s * 1.4, s * 0.18);
+    ctx.fill();
+    ctx.stroke();
+    // First 2 letters
+    const label = (buildingId || '??').slice(0, 2).toUpperCase();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.max(6, Math.round(s * 0.75))}px sans-serif`;
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    // Slight shadow for legibility
-    ctx.shadowColor  = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur   = 4;
-    ctx.fillText(icon, centerX, centerY - fontSize * 0.1);
-    ctx.shadowBlur   = 0;
+    ctx.fillText(label, 0, 0);
   },
 
   // ---------------------------------------------------------------------------
@@ -396,7 +1249,7 @@ const Renderer = {
   // ---------------------------------------------------------------------------
 
   /**
-   * Draw a unit as a colored circle with type indicator and health bar.
+   * Draw a unit canvas illustration with health bar.
    * @param {CanvasRenderingContext2D} ctx
    * @param {number} centerX
    * @param {number} centerY
@@ -408,68 +1261,146 @@ const Renderer = {
   drawUnit(ctx, centerX, centerY, unit, civColor, hexSizePx, totalUnits) {
     if (!unit) return;
 
-    // Radius by unit type
-    const radii = { scout: 0.18, warrior: 0.22, siege: 0.28,
-                    cyber_warrior: 0.24, quantum_agent: 0.26 };
-    const r = Math.max(5, hexSizePx * (radii[unit.type] || 0.22));
+    const r = Math.max(6, hexSizePx * 0.22);
+    ctx.save();
+    ctx.translate(centerX, centerY);
 
-    // Circle body
+    switch(unit.type) {
+      case 'scout':          this._drawUnitScout(ctx, r, civColor); break;
+      case 'warrior':        this._drawUnitWarrior(ctx, r, civColor); break;
+      case 'siege':          this._drawUnitSiege(ctx, r, civColor); break;
+      case 'cyber_warrior':  this._drawUnitCyberWarrior(ctx, r, civColor); break;
+      case 'quantum_agent':  this._drawUnitQuantumAgent(ctx, r, civColor); break;
+      default: this._drawUnitGeneric(ctx, r, civColor); break;
+    }
+
+    ctx.restore();
+
+    // Health bar below unit
+    const hp = unit.hp ?? 10, maxHp = unit.maxHp ?? 10;
+    const ratio = Math.max(0, Math.min(1, hp / maxHp));
+    const bw = r * 2.2, bh = Math.max(3, r * 0.22);
+    const bx = centerX - bw/2, by = centerY + r + 3;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = ratio > 0.6 ? '#00cc44' : ratio > 0.3 ? '#ccaa00' : '#cc2200';
+    ctx.fillRect(bx, by, bw * ratio, bh);
+  },
+
+  _drawUnitScout(ctx, r, color) {
+    // Isoceles triangle pointing right (drone)
+    ctx.fillStyle = color;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = Math.max(1, r * 0.1);
     ctx.beginPath();
-    ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
-    ctx.fillStyle = civColor;
+    ctx.moveTo(r * 0.75, 0);
+    ctx.lineTo(-r * 0.55, -r * 0.55);
+    ctx.lineTo(-r * 0.55, r * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Wing lines
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-r * 0.15, -r * 0.22); ctx.lineTo(-r * 0.55, -r * 0.75); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r * 0.15, r * 0.22);  ctx.lineTo(-r * 0.55, r * 0.75);  ctx.stroke();
+  },
+
+  _drawUnitWarrior(ctx, r, color) {
+    // Hexagonal shield
+    ctx.fillStyle = color;
+    ctx.strokeStyle = this._shiftColor(color, -0.25) || '#333333';
+    ctx.lineWidth = Math.max(1, r * 0.12);
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (Math.PI / 180) * (60 * i - 30);
+      const x = r * 0.82 * Math.cos(a);
+      const y = r * 0.82 * Math.sin(a);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Crossed diagonal lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = Math.max(1, r * 0.08);
+    ctx.beginPath(); ctx.moveTo(-r * 0.45, -r * 0.45); ctx.lineTo(r * 0.45, r * 0.45); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(r * 0.45, -r * 0.45);  ctx.lineTo(-r * 0.45, r * 0.45); ctx.stroke();
+  },
+
+  _drawUnitSiege(ctx, r, color) {
+    // Tank body
+    ctx.fillStyle = color;
+    ctx.strokeStyle = '#222222';
+    ctx.lineWidth = Math.max(1, r * 0.1);
+    ctx.fillRect(-r * 0.72, -r * 0.38, r * 1.44, r * 0.7);
+    ctx.strokeRect(-r * 0.72, -r * 0.38, r * 1.44, r * 0.7);
+    // Barrel
+    ctx.fillStyle = this._shiftColor(color, -0.15) || color;
+    ctx.fillRect(r * 0.45, -r * 0.1, r * 0.65, r * 0.2);
+    // Wheels
+    ctx.fillStyle = '#333333';
+    for (const wx of [-r * 0.42, r * 0.12]) {
+      ctx.beginPath();
+      ctx.arc(wx, r * 0.38, r * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  _drawUnitCyberWarrior(ctx, r, color) {
+    // Diamond shape
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#00ffff';
+    ctx.fillStyle = color;
+    ctx.strokeStyle = '#00ffff';
+    ctx.lineWidth = Math.max(1, r * 0.12);
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.85);
+    ctx.lineTo(r * 0.85, 0);
+    ctx.lineTo(0, r * 0.85);
+    ctx.lineTo(-r * 0.85, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    // Circuit lines through center
+    ctx.strokeStyle = 'rgba(0,255,255,0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-r * 0.5, 0); ctx.lineTo(r * 0.5, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -r * 0.5); ctx.lineTo(0, r * 0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r * 0.25, -r * 0.25); ctx.lineTo(r * 0.25, r * 0.25); ctx.stroke();
+  },
+
+  _drawUnitQuantumAgent(ctx, r, color) {
+    // Probability wave rings
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#ff00ff';
+    for (let i = 1; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.arc(0, 0, r * (0.5 + i * 0.28), 0, Math.PI * 1.5);
+      ctx.strokeStyle = `rgba(255,0,255,${0.35 - i * 0.1})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // Center filled circle
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.52, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#ff00ff';
+    ctx.lineWidth = Math.max(1, r * 0.1);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  },
+
+  _drawUnitGeneric(ctx, r, color) {
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2);
+    ctx.fillStyle = color;
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth   = 1.5;
+    ctx.lineWidth = Math.max(1, r * 0.1);
     ctx.stroke();
-
-    // Unit type initial
-    const typeData = (typeof UNIT_TYPES !== 'undefined') ? UNIT_TYPES[unit.type] : null;
-    const icon     = typeData ? typeData.icon : '?';
-    const fontSize = Math.max(7, Math.round(r * 1.1));
-    ctx.font = `${fontSize}px serif`;
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle    = '#ffffff';
-    ctx.shadowColor  = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur   = 3;
-    ctx.fillText(icon, centerX, centerY);
-    ctx.shadowBlur   = 0;
-
-    // Health bar
-    const hp    = unit.hp    !== undefined ? unit.hp    : 10;
-    const maxHp = unit.maxHp !== undefined ? unit.maxHp : 10;
-    const hpRatio = Math.max(0, Math.min(1, hp / maxHp));
-    const barW  = r * 2.2;
-    const barH  = Math.max(3, r * 0.25);
-    const barX  = centerX - barW / 2;
-    const barY  = centerY + r + 3;
-
-    // Background
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(barX, barY, barW, barH);
-    // Fill — green/yellow/red
-    const hpColor = hpRatio > 0.6 ? '#33cc33' : hpRatio > 0.3 ? '#ffcc00' : '#ff3333';
-    ctx.fillStyle = hpColor;
-    ctx.fillRect(barX, barY, barW * hpRatio, barH);
-
-    // Count badge if multiple units on tile
-    if (totalUnits > 1) {
-      const badgeR = Math.max(5, r * 0.45);
-      const bx     = centerX + r * 0.65;
-      const by     = centerY - r * 0.65;
-      ctx.beginPath();
-      ctx.arc(bx, by, badgeR, 0, Math.PI * 2);
-      ctx.fillStyle   = '#222233';
-      ctx.fill();
-      ctx.strokeStyle = '#cccccc';
-      ctx.lineWidth   = 1;
-      ctx.stroke();
-      ctx.font = `bold ${Math.max(7, Math.round(badgeR * 1.2))}px sans-serif`;
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle    = '#ffffff';
-      ctx.fillText(String(totalUnits), bx, by);
-    }
   },
 
   // ---------------------------------------------------------------------------
@@ -732,6 +1663,10 @@ const Renderer = {
     // --- Cluster nebulae (drawn behind everything) ----------------------------
     this._drawAllClusterNebulae(ctx, nodes, discovered);
 
+    // --- Axes and region labels -----------------------------------------------
+    this._drawConceptSpaceAxes(ctx);
+    this._drawConceptSpaceRegionLabels(ctx, nodes);
+
     // --- Connection lines ----------------------------------------------------
     if (connections && connections.length > 0) {
       this.drawConceptConnections(ctx, connections, discovered);
@@ -844,45 +1779,31 @@ const Renderer = {
 
     const { sx, sy } = this._csNodeScreenPos(node);
 
-    const tier     = node.tier || 1;
-    const baseR    = tier * 2 + 4;                       // tier 1=6px, tier 7=18px
-    const radius   = baseR * this.csZoom * (isHovered ? 1.3 : 1.0);
+    const tier    = node.tier || 1;
+    const radius  = Math.max(4, tier * 1.5 + 3) * this.csZoom * (isHovered ? 1.25 : 1.0);
 
-    const clusterMeta = (typeof CLUSTER_META !== 'undefined') ? CLUSTER_META[node.cluster] : null;
+    const clusterMeta  = (typeof CLUSTER_META !== 'undefined') ? CLUSTER_META[node.cluster] : null;
     const clusterColor = clusterMeta ? clusterMeta.color : '#888888';
 
     if (!isDiscovered) {
-      // Small dim grey dot
+      // Tiny dim grey dot — no label
       ctx.beginPath();
-      ctx.arc(sx, sy, Math.max(3, radius * 0.5), 0, Math.PI * 2);
-      ctx.fillStyle   = 'rgba(80,80,100,0.5)';
+      ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(80,80,100,0.4)';
       ctx.fill();
       return;
     }
 
-    // Glow for discovered nodes
-    const glowR  = radius * 2.2;
-    const glow   = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
-    const rgb    = this._hexColorToRgb(clusterColor);
-    if (rgb) {
-      glow.addColorStop(0,   `rgba(${rgb.r},${rgb.g},${rgb.b},0.35)`);
-      glow.addColorStop(1,   `rgba(${rgb.r},${rgb.g},${rgb.b},0.00)`);
-    }
-    ctx.beginPath();
-    ctx.arc(sx, sy, glowR, 0, Math.PI * 2);
-    ctx.fillStyle = glow;
-    ctx.fill();
-
-    // Node body
+    // Simple circle with glow
+    ctx.shadowBlur  = 10;
+    ctx.shadowColor = clusterColor;
     ctx.beginPath();
     ctx.arc(sx, sy, radius, 0, Math.PI * 2);
-    ctx.fillStyle   = clusterColor;
+    ctx.fillStyle = clusterColor;
     ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth   = 1.2;
-    ctx.stroke();
+    ctx.shadowBlur = 0;
 
-    // Selected: gold glow ring
+    // Selected: bright gold ring around node
     if (isSelected) {
       const slotIndex = mixSlots.indexOf(node.id);
       const goldColor = slotIndex === 0 ? '#FFD700' : '#FFA500';
@@ -890,13 +1811,6 @@ const Renderer = {
       ctx.arc(sx, sy, radius + 4 * this.csZoom, 0, Math.PI * 2);
       ctx.strokeStyle = goldColor;
       ctx.lineWidth   = 2.5;
-      ctx.stroke();
-
-      // Outer pulse ring
-      ctx.beginPath();
-      ctx.arc(sx, sy, radius + 8 * this.csZoom, 0, Math.PI * 2);
-      ctx.strokeStyle = `${goldColor}66`;
-      ctx.lineWidth   = 1.5;
       ctx.stroke();
     }
   },
@@ -927,37 +1841,31 @@ const Renderer = {
       const { sx: ax, sy: ay } = this._csNodeScreenPos(nodeA);
       const { sx: bx, sy: by } = this._csNodeScreenPos(nodeB);
 
-      // Bezier control point: offset from midpoint perpendicular to line
-      const mx = (ax + bx) / 2;
-      const my = (ay + by) / 2;
-      const dx = bx - ax;
-      const dy = by - ay;
-      const perpX = -dy * 0.18;
-      const perpY =  dx * 0.18;
-      const cpx   = mx + perpX;
-      const cpy   = my + perpY;
-
       const clusterMeta = (typeof CLUSTER_META !== 'undefined') ? CLUSTER_META[nodeA.cluster] : null;
       const lineColor   = clusterMeta ? clusterMeta.color : '#555577';
 
-      ctx.beginPath();
-      ctx.moveTo(ax, ay);
-      ctx.quadraticCurveTo(cpx, cpy, bx, by);
+      ctx.lineWidth = 1; // always 1px regardless of zoom — thin, web-like
 
       if (aDisc && bDisc) {
-        // Both discovered: bright solid line
-        ctx.strokeStyle = lineColor + 'bb';
-        ctx.lineWidth   = 1.5 * this.csZoom;
+        // Both discovered: straight solid line
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.strokeStyle = lineColor + '66'; // alpha 0.4
         ctx.setLineDash([]);
+        ctx.stroke();
       } else {
-        // One discovered: dim dashed hint
-        ctx.strokeStyle = lineColor + '44';
-        ctx.lineWidth   = 1.0 * this.csZoom;
+        // One discovered: dashed hint line
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.strokeStyle = lineColor + '1f'; // alpha 0.12
         ctx.setLineDash([4, 6]);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
-      ctx.stroke();
-      ctx.setLineDash([]);
     }
+    ctx.setLineDash([]);
   },
 
   // ---------------------------------------------------------------------------
@@ -1102,8 +2010,8 @@ const Renderer = {
       const rect   = canvas.getBoundingClientRect();
       const mx     = e.clientX - rect.left;
       const my     = e.clientY - rect.top;
-      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-      const newZ   = Math.max(0.3, Math.min(3.0, self.csZoom * factor));
+      const factor = e.deltaY < 0 ? 1.04 : 1 / 1.04;
+      const newZ   = Math.max(0.5, Math.min(2.0, self.csZoom * factor));
       self.csOffsetX = mx - (mx - self.csOffsetX) * (newZ / self.csZoom);
       self.csOffsetY = my - (my - self.csOffsetY) * (newZ / self.csZoom);
       self.csZoom    = newZ;
@@ -1519,6 +2427,80 @@ const Renderer = {
     }
 
     ctx.restore();
+  },
+
+  /** Draw axis text labels and faint guide lines in the concept space canvas. */
+  _drawConceptSpaceAxes(ctx) {
+    if (!this.csCanvas) return;
+    const W = this.csCanvas.width;
+    const H = this.csCanvas.height;
+    const style = "rgba(255,255,255,0.25)";
+    const font  = "11px 'Courier New'";
+    ctx.font         = font;
+    ctx.fillStyle    = style;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    // Faint guide lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([6, 8]);
+    // Horizontal line at 70% height
+    ctx.beginPath(); ctx.moveTo(0, H * 0.7); ctx.lineTo(W, H * 0.7); ctx.stroke();
+    // Vertical center line
+    ctx.beginPath(); ctx.moveTo(W * 0.5, 0); ctx.lineTo(W * 0.5, H); ctx.stroke();
+    ctx.setLineDash([]);
+    // Edge labels
+    ctx.fillStyle = style;
+    ctx.textAlign = 'center';
+    ctx.fillText('ANCIENT', W / 2, H - 14);
+    ctx.fillText('MODERN / FUTURE', W / 2, 14);
+    // Left: rotated
+    ctx.save();
+    ctx.translate(14, H / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('PHYSICAL / HARDWARE', 0, 0);
+    ctx.restore();
+    // Right: rotated
+    ctx.save();
+    ctx.translate(W - 14, H / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('ABSTRACT / THEORY', 0, 0);
+    ctx.restore();
+  },
+
+  /** Draw large dim cluster name labels at each cluster's centroid. */
+  _drawConceptSpaceRegionLabels(ctx, nodes) {
+    if (!nodes || !this.csCanvas) return;
+    const W = this.csCanvas.width;
+    const H = this.csCanvas.height;
+    // Group by cluster
+    const groups = {};
+    for (const node of Object.values(nodes)) {
+      if (!node.cluster) continue;
+      if (!groups[node.cluster]) groups[node.cluster] = [];
+      groups[node.cluster].push(node);
+    }
+    ctx.font         = "24px 'Courier New'";
+    ctx.fillStyle    = 'rgba(255,255,255,0.07)';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    for (const [cluster, clusterNodes] of Object.entries(groups)) {
+      let sumX = 0, sumY = 0, count = 0;
+      for (const n of clusterNodes) {
+        const { sx, sy } = this._csNodeScreenPos(n);
+        if (sx >= 0 && sx <= W && sy >= 0 && sy <= H) {
+          sumX += sx; sumY += sy; count++;
+        }
+      }
+      if (count === 0) continue;
+      const cx = sumX / count;
+      const cy = sumY / count;
+      const meta = (typeof CLUSTER_META !== 'undefined') ? CLUSTER_META[cluster] : null;
+      const label = meta ? (meta.name || cluster) : cluster;
+      ctx.fillText(label.toUpperCase(), cx, cy);
+    }
   },
 
   /**
