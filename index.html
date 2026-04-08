@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Silicon Civilizations — Lead your technological civilization to AGI or conquest.">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>Silicon Civilizations</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="theme-default">
+
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN 1: Intro / Splash
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-intro" class="screen active">
+    <div id="circuit-bg" class="circuit-bg" aria-hidden="true">
+      <div class="circuit-line cl-h cl-1"></div>
+      <div class="circuit-line cl-h cl-2"></div>
+      <div class="circuit-line cl-h cl-3"></div>
+      <div class="circuit-line cl-v cl-4"></div>
+      <div class="circuit-line cl-v cl-5"></div>
+      <div class="circuit-node cn-1"></div>
+      <div class="circuit-node cn-2"></div>
+      <div class="circuit-node cn-3"></div>
+      <div class="circuit-node cn-4"></div>
+      <div class="circuit-node cn-5"></div>
+      <div class="circuit-node cn-6"></div>
+    </div>
+    <div class="intro-content">
+      <div class="intro-logo-wrap">
+        <div class="intro-logo-icon" aria-hidden="true">⬡</div>
+        <h1 class="game-title">Silicon<br>Civilizations</h1>
+      </div>
+      <p class="game-tagline">From ancient automata to artificial general intelligence —<br>forge the future of silicon life.</p>
+      <div class="intro-buttons">
+        <button class="btn-primary btn-new-game" id="btn-new-game">▶ New Game</button>
+        <button class="btn-secondary" id="btn-how-to-play">? How To Play</button>
+      </div>
+      <div class="intro-version">v0.1.0 — alpha</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN 2: Faction Selection
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-faction" class="screen">
+    <div class="faction-screen-inner">
+      <div class="faction-header">
+        <h2 class="faction-screen-title">Choose Your Civilization</h2>
+        <p class="faction-screen-sub">Each faction commands a distinct technological tradition. Your starting proficiencies shape what you can discover.</p>
+      </div>
+      <div class="faction-body">
+        <!-- Faction grid populated by JS -->
+        <div id="faction-grid" class="faction-grid"></div>
+
+        <!-- Faction detail panel -->
+        <div id="faction-detail" class="faction-detail-panel">
+          <div class="faction-detail-placeholder">
+            <span>← Select a faction</span>
+          </div>
+          <div class="faction-detail-content hidden" id="faction-detail-content">
+            <div class="faction-detail-header">
+              <div class="faction-color-badge" id="fd-color-badge"></div>
+              <div class="faction-detail-titles">
+                <div class="faction-detail-name" id="fd-name"></div>
+                <div class="faction-detail-subtitle" id="fd-subtitle"></div>
+              </div>
+            </div>
+            <p class="faction-lore" id="fd-lore"></p>
+            <div class="faction-stats" id="fd-stats">
+              <div class="stat-row"><span class="stat-label">Home Branch</span><span class="stat-value" id="fd-home-branch"></span></div>
+              <div class="stat-row"><span class="stat-label">Playstyle</span><span class="stat-value" id="fd-playstyle"></span></div>
+              <div class="stat-row"><span class="stat-label">Starting Bonus</span><span class="stat-value" id="fd-bonus"></span></div>
+            </div>
+            <div class="faction-special">
+              <div class="special-label">Special Ability</div>
+              <div class="special-name" id="fd-special-name"></div>
+              <div class="special-desc" id="fd-special-desc"></div>
+            </div>
+            <div class="branch-proficiency-section">
+              <div class="branch-prof-title">Branch Proficiency</div>
+              <div id="fd-branch-bars" class="branch-bars"></div>
+            </div>
+            <button class="btn-primary btn-lead" id="btn-start-game" disabled>Lead This Civilization</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN 3: Main Game
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-game" class="screen">
+
+    <!-- TOP BAR -->
+    <div id="game-topbar">
+      <div class="topbar-left">
+        <div id="faction-badge" class="faction-badge">
+          <span class="faction-badge-icon" id="topbar-faction-icon">⬡</span>
+          <span class="faction-badge-name" id="topbar-faction-name">—</span>
+        </div>
+        <div id="turn-counter" class="turn-counter">
+          Turn <span id="turn-number">1</span>
+        </div>
+      </div>
+
+      <div class="topbar-center">
+        <div id="resource-bar" class="resource-bar">
+          <div class="resource-item res-energy" title="Energy">
+            <span class="res-icon">⚡</span>
+            <span class="res-value" id="res-energy">0</span>
+          </div>
+          <div class="resource-item res-silicon" title="Silicon">
+            <span class="res-icon">💎</span>
+            <span class="res-value" id="res-silicon">0</span>
+          </div>
+          <div class="resource-item res-research" title="Research Points">
+            <span class="res-icon">🔬</span>
+            <span class="res-value" id="res-research">0</span>
+          </div>
+          <div class="resource-item res-data" title="Data">
+            <span class="res-icon">💾</span>
+            <span class="res-value" id="res-data">0</span>
+          </div>
+          <div class="resource-item res-compute" title="Compute (Score)">
+            <span class="res-icon">⚙️</span>
+            <span class="res-value" id="res-compute">0</span>
+          </div>
+          <div class="resource-item res-rareearth" title="Rare Earth">
+            <span class="res-icon">🌍</span>
+            <span class="res-value" id="res-rareearth">0</span>
+          </div>
+          <div class="resource-item res-quantum" title="Quantum">
+            <span class="res-icon">⚛️</span>
+            <span class="res-value" id="res-quantum">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <button class="btn-idea-lab" id="btn-open-idea-lab">💡 Idea Lab</button>
+        <button class="btn-end-turn" id="btn-end-turn">End Turn ▶</button>
+      </div>
+    </div>
+
+    <!-- MAIN GAME AREA -->
+    <div id="game-main">
+
+      <!-- LEFT PANEL -->
+      <div id="panel-left" class="game-panel">
+        <div class="panel-section">
+          <div class="panel-section-title">Empire</div>
+          <div id="empire-stats" class="empire-stats">
+            <div class="empire-stat"><span class="estat-label">Tiles</span><span class="estat-value" id="stat-tiles">0</span></div>
+            <div class="empire-stat"><span class="estat-label">Units</span><span class="estat-value" id="stat-units">0</span></div>
+            <div class="empire-stat"><span class="estat-label">Discoveries</span><span class="estat-value" id="stat-discoveries">0</span></div>
+            <div class="empire-stat"><span class="estat-label">Score</span><span class="estat-value score-value" id="stat-score">0</span></div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-section-title">Civilizations</div>
+          <div id="civ-list" class="civ-list"></div>
+        </div>
+
+        <div class="panel-section panel-section-log">
+          <div class="panel-section-title">Event Log</div>
+          <div id="event-log" class="event-log"></div>
+        </div>
+      </div>
+
+      <!-- MAP CANVAS -->
+      <div id="map-container">
+        <canvas id="map-canvas"></canvas>
+        <div id="map-tooltip" class="tooltip hidden"></div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div id="panel-right" class="game-panel">
+
+        <!-- Tile Info -->
+        <div id="tile-info-panel">
+          <div class="panel-section-title">Selected Tile</div>
+          <div id="tile-info-body" class="tile-info-body">
+            <p class="tile-placeholder">Click a hex to inspect it.</p>
+          </div>
+          <div id="tile-detail" class="tile-detail hidden">
+            <div class="tile-type-row">
+              <span class="tile-icon" id="tile-icon">—</span>
+              <span class="tile-type-name" id="tile-type-name">—</span>
+            </div>
+            <div class="tile-owner-row">Owner: <span id="tile-owner">Unclaimed</span></div>
+            <div class="tile-resource-row">Yields: <span id="tile-yields">—</span></div>
+            <div class="tile-structure-row">Structure: <span id="tile-structure">None</span></div>
+            <div class="tile-unit-row">Unit: <span id="tile-unit">None</span></div>
+          </div>
+        </div>
+
+        <!-- Build Menu -->
+        <div id="build-panel" class="hidden">
+          <div class="panel-section-title">Build</div>
+          <div id="build-menu" class="build-menu"></div>
+        </div>
+
+        <!-- Unit Actions -->
+        <div id="unit-panel">
+          <div class="panel-section-title">Unit Actions</div>
+          <div id="unit-actions" class="unit-actions">
+            <p class="tile-placeholder">Select a tile with your unit.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /#game-main -->
+  </div><!-- /#screen-game -->
+
+  <!-- ══════════════════════════════════════════════════════
+       IDEA LAB OVERLAY
+  ══════════════════════════════════════════════════════ -->
+  <div id="idea-lab-overlay" class="overlay hidden">
+    <div class="overlay-header">
+      <div class="overlay-header-left">
+        <h2 class="overlay-title">💡 Idea Lab</h2>
+        <p class="overlay-subtitle">Synthesize concepts to drive your civilization's technological evolution.</p>
+      </div>
+      <div class="overlay-branch-display" id="overlay-branch-display">
+        <div class="overlay-branch-title">Branch Proficiency</div>
+        <div id="overlay-branch-bars" class="branch-bars branch-bars-inline"></div>
+      </div>
+      <button class="btn-close-overlay" id="btn-close-idea-lab" aria-label="Close Idea Lab">✕</button>
+    </div>
+
+    <div class="idea-lab-content">
+
+      <!-- LEFT: Concept Space Canvas -->
+      <div id="concept-space-container">
+        <canvas id="concept-space-canvas"></canvas>
+        <div id="cs-tooltip" class="tooltip hidden"></div>
+        <div id="cs-legend" class="cs-legend"></div>
+      </div>
+
+      <!-- RIGHT: Synthesis Panel -->
+      <div id="mix-panel">
+        <h3 class="mix-panel-title">Synthesis Chamber</h3>
+
+        <div id="research-display" class="research-display">
+          Research: <span id="rp-display" class="rp-value">0</span> pts
+        </div>
+
+        <!-- Mix Slots -->
+        <div class="mix-slots">
+          <div class="mix-slot" id="mix-slot-0">
+            <div class="slot-label">Concept A</div>
+            <div class="slot-concept" id="slot-concept-0">Click a concept →</div>
+            <button class="btn-clear-slot" data-slot="0" aria-label="Clear slot A">✕</button>
+          </div>
+          <div class="mix-operator">+</div>
+          <div class="mix-slot" id="mix-slot-1">
+            <div class="slot-label">Concept B</div>
+            <div class="slot-concept" id="slot-concept-1">Click a concept →</div>
+            <button class="btn-clear-slot" data-slot="1" aria-label="Clear slot B">✕</button>
+          </div>
+        </div>
+
+        <!-- Combo Preview -->
+        <div id="combo-preview" class="combo-preview hidden">
+          <div class="combo-row">Success: <span id="combo-chance" class="combo-chance">—</span></div>
+          <div class="combo-row">Cost: <span id="combo-cost" class="combo-cost">—</span> RP</div>
+          <div id="combo-distance-warn" class="combo-warn hidden">⚠️ Cross-branch synthesis</div>
+        </div>
+
+        <button class="btn-synthesize" id="btn-synthesize" disabled>⚗️ Synthesize</button>
+
+        <div id="synthesis-result" class="synthesis-result"></div>
+
+        <!-- Discovered Concepts -->
+        <div class="concept-list-header">
+          <h4>Discovered (<span id="concept-count">0</span>)</h4>
+          <input type="text" id="concept-search" placeholder="Search concepts..." autocomplete="off">
+        </div>
+        <div id="concept-list" class="concept-list"></div>
+
+        <!-- Research Leads / Hints -->
+        <h4 class="hints-title">Research Leads</h4>
+        <div id="hint-list" class="hint-list"></div>
+
+      </div><!-- /#mix-panel -->
+    </div><!-- /.idea-lab-content -->
+  </div><!-- /#idea-lab-overlay -->
+
+  <!-- ══════════════════════════════════════════════════════
+       EVENT MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="event-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="event-title">
+    <div class="modal-content event-modal-content">
+      <div class="event-icon" id="event-icon" aria-hidden="true"></div>
+      <h2 id="event-title" class="modal-title"></h2>
+      <p id="event-desc" class="modal-desc"></p>
+      <div id="event-effects-list" class="effects-list"></div>
+      <button class="btn-primary" id="btn-dismiss-event">Acknowledge</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       COMBAT MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="combat-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="combat-heading">
+    <div class="modal-content combat-modal-content">
+      <h2 id="combat-heading" class="modal-title">⚔️ Battle Report</h2>
+      <div id="combat-details" class="combat-details"></div>
+      <button class="btn-primary" id="btn-dismiss-combat">Continue</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       DISCOVERY MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="discovery-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="disc-heading">
+    <div class="modal-content discovery-content">
+      <div class="discovery-animation" aria-hidden="true">✨</div>
+      <h2 id="disc-heading" class="modal-title">Discovery!</h2>
+      <div class="discovery-concept-name" id="disc-concept-name"></div>
+      <p id="disc-concept-desc" class="modal-desc"></p>
+      <div id="disc-concept-effects" class="effects-list"></div>
+      <button class="btn-primary" id="btn-dismiss-discovery">Remarkable!</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       VICTORY / DEFEAT MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="end-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="end-title">
+    <div class="modal-content end-content">
+      <div id="end-icon" class="end-icon" aria-hidden="true"></div>
+      <h1 id="end-title" class="end-title"></h1>
+      <p id="end-message" class="modal-desc"></p>
+      <div id="end-stats" class="end-stats"></div>
+      <button class="btn-primary" id="btn-play-again">Play Again</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       HOW TO PLAY MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="help-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="help-heading">
+    <div class="modal-content help-content">
+      <h2 id="help-heading" class="modal-title">How to Play</h2>
+      <div class="help-body">
+        <h3>Overview</h3>
+        <p>Lead your technological civilization from ancient automata to artificial general intelligence.</p>
+
+        <h3>Core Loop</h3>
+        <ul>
+          <li>Build structures on hex tiles to generate resources each turn</li>
+          <li>Use Research Points in the Idea Lab to combine concepts and make discoveries</li>
+          <li>Expand territory, produce units, and wage war on rival civilizations</li>
+          <li>Research Branch Proficiency determines your success rate for cross-tradition synthesis</li>
+        </ul>
+
+        <h3>Resources</h3>
+        <ul>
+          <li><span class="res-help res-energy">⚡ Energy</span> — powers buildings and units</li>
+          <li><span class="res-help res-silicon">💎 Silicon</span> — primary building material</li>
+          <li><span class="res-help res-research">🔬 Research</span> — fuel for concept synthesis</li>
+          <li><span class="res-help res-data">💾 Data</span> — advanced computation fuel</li>
+          <li><span class="res-help res-compute">⚙️ Compute</span> — civilization processing power (score)</li>
+          <li><span class="res-help res-rareearth">🌍 Rare Earth</span> — advanced components</li>
+          <li><span class="res-help res-quantum">⚛️ Quantum</span> — quantum-era technologies</li>
+        </ul>
+
+        <h3>Research Branches</h3>
+        <p>Each concept belongs to a research branch. Your faction starts with high proficiency in its home branches but must work to reach distant traditions. Building branch-specific research buildings increases proficiency. Capturing enemy civilizations absorbs their expertise!</p>
+
+        <h3>Winning</h3>
+        <p>Discover <strong>AGI</strong> or <strong>Consciousness Upload</strong> (tech victory), or eliminate all other civilizations (military conquest).</p>
+      </div>
+      <button class="btn-primary" id="btn-close-help">Got It!</button>
+    </div>
+  </div>
+
+  <!-- Scripts — order matters -->
+  <script src="js/data.js"></script>
+  <script src="js/mapgen.js"></script>
+  <script src="js/ideaspace.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
