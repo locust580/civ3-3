@@ -180,3 +180,19 @@ Response:
   │ Troop movement        │ Units glide from hex to hex with ease-in-out interpolation, leaving a fading trail;    │
   │ animations            │ triggered via unit:moving event from the engine                                        │
   └───────────────────────┴────────────────────────────────────────────────────────────────────────────────────────┘
+
+Fourth Prompt:
+The tutorial is still broken, and doesn't advance whenever one's own tile is clicked in the fourth step.             
+Additionally, the borders do not lie between the unoccupied and occupied regions like I asked you to change. I mean    
+that the thick faction-colored border that lies on the edges of the hexagons I own must only lie between hexagons I    
+don't own and ones I do - this means that a thick faction-colored border should NOT rest between two hexagons that are 
+ my own. The cognitive lab building does not actually build anything when clicked, but does create a success message.  
+Fix this, and check that all buildings are indeed created (I have a hint that every building under advanced cannot be  
+built, considering that even when given the option to build them on a tile I own, nothing happens). Furthermore, the   
+synthesis chamber menu is much too compressed to be able to read clearly. Instead, place it at the bottom of the       
+screen, horizontal, and have selection tabs to flip between research + discovered, research leads, direct research.    
+The resource hover menu is either non-existent or not showing up - I asked for you to put the tooltip over the         
+resource bar at the top of the screen. Furthermore, I want a more fair distribution of the initial players in that I   
+want them mostly evenly spaced at game start, and for added chaos I want all 8 factions on the board at the same time. 
+ Additionally, I want most of the bots to be aggressive, and have their behaviour try to expand towards others as      
+quickly as possible to try and conquer others and their resources. I want you to add more troop types as well.
