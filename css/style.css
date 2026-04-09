@@ -884,6 +884,45 @@ input  { font-family: var(--font-mono); }
 .diplo-neutral { background: rgba(255,255,255,0.06); color: rgba(200,200,224,0.5); }
 .diplo-dead    { background: rgba(255,255,255,0.04); color: rgba(200,200,224,0.25); text-decoration: line-through; }
 
+.btn-declare-war,
+.btn-propose-peace {
+  display: block;
+  width: 100%;
+  padding: 5px 10px;
+  margin-top: 5px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+  background: transparent;
+}
+.btn-declare-war {
+  color: #c85050;
+  border-color: rgba(200, 80, 80, 0.4);
+  background: rgba(200, 80, 80, 0.04);
+}
+.btn-declare-war:hover {
+  background: rgba(200, 80, 80, 0.14);
+  border-color: rgba(200, 80, 80, 0.8);
+  transform: translateX(2px);
+}
+.btn-propose-peace {
+  color: #50a050;
+  border-color: rgba(80, 160, 80, 0.4);
+  background: rgba(80, 160, 80, 0.04);
+}
+.btn-propose-peace:hover {
+  background: rgba(80, 160, 80, 0.14);
+  border-color: rgba(80, 160, 80, 0.8);
+  transform: translateX(2px);
+}
+
 /* ── Event Log ── */
 .event-log {
   flex: 1;
@@ -2366,4 +2405,112 @@ select:focus {
     padding: 20px;
   }
   body > * { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DIRECT RESEARCH PANEL
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.research-panel { max-height: 280px; overflow-y: auto; margin-bottom: 8px; }
+.research-branch-group { margin-bottom: 8px; }
+.research-branch-header {
+  font-family: 'Georgia', serif;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 8px 2px;
+  opacity: 0.8;
+}
+.research-item {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.research-item.affordable:hover { background: rgba(0,200,100,0.07); }
+.research-item.unaffordable { opacity: 0.4; cursor: not-allowed; }
+.research-item-name {
+  font-family: 'Georgia', serif;
+  font-size: 11px;
+  color: #c8c0a0;
+  margin-bottom: 2px;
+}
+.research-item-desc {
+  font-size: 10px;
+  color: rgba(160,155,140,0.6);
+  font-style: italic;
+  margin-bottom: 3px;
+}
+.research-item-cost {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #88cc88;
+}
+.research-item.unaffordable .research-item-cost { color: #cc6666; }
+.research-intro { font-size: 10px; color: rgba(180,175,160,0.5); padding: 0 8px 4px; font-style: italic; }
+.research-empty { font-size: 10px; color: rgba(180,175,160,0.4); padding: 8px; font-style: italic; }
+
+/* ── Map hover tooltip ── */
+#map-tooltip {
+  position: absolute;
+  z-index: 60;
+  max-width: 220px;
+  min-width: 140px;
+  background: linear-gradient(135deg, #0a0a14 0%, #111128 100%);
+  border: 1px solid rgba(0, 220, 255, 0.3);
+  border-radius: 4px;
+  padding: 8px 10px;
+  pointer-events: none;
+  font-family: 'Courier New', monospace;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+.tt-tile-name {
+  font-family: 'Georgia', serif;
+  font-size: 11px;
+  font-weight: bold;
+  color: rgba(180, 160, 100, 0.9);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(180, 160, 100, 0.2);
+}
+.tt-section {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tt-section:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+.tt-name {
+  font-size: 12px;
+  font-weight: bold;
+  color: #c8c0ff;
+  margin-bottom: 3px;
+}
+.tt-desc {
+  font-size: 10px;
+  color: rgba(160, 155, 200, 0.65);
+  line-height: 1.4;
+  font-style: italic;
+  margin-bottom: 4px;
+}
+.tt-stat {
+  font-size: 10px;
+  color: rgba(180, 175, 200, 0.75);
+  margin-top: 2px;
+}
+.tt-value {
+  color: #88ddff;
+  font-weight: bold;
+}
+.tt-requires {
+  font-size: 10px;
+  color: #cc8844;
+  margin-top: 2px;
+}
+.tt-more {
+  font-size: 10px;
+  color: rgba(160, 155, 200, 0.5);
+  font-style: italic;
+  margin-top: 4px;
 }

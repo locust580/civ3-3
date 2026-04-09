@@ -46,6 +46,9 @@ const Renderer = {
   // Active discovery animations: { conceptId, startTime, duration, onComplete }
   _discoveryAnims: [],
 
+  // Active unit move animations: { unitId, fromX, fromY, toX, toY, startTime, duration, civColor, unitType }
+  _unitMoveAnims: [],
+
   // ─── Z-DEPTH PER CLUSTER (for pseudo-3D) ──────────────────────────────────
   _clusterZDepth: {
     mythological: 0.2,
@@ -89,6 +92,52 @@ const Renderer = {
     // Generate a fixed star field (~200 stars)
     this._stars = this._generateStars(220);
 
+    this._dirty = true;
+    this._needsFit = true;
+  },
+
+  fitToDiscovered(discoveredSet) {
+    if (!this.csCanvas || !discoveredSet || discoveredSet.size === 0) return;
+    const W = this.csCanvas.width;
+    const H = this.csCanvas.height;
+
+    // Gather discovered concept positions in data space (x,y from CONCEPTS)
+    const discovered = [];
+    const allConcepts = (typeof CONCEPTS !== 'undefined') ? CONCEPTS : {};
+    for (const id of discoveredSet) {
+      const c = allConcepts[id];
+      if (c && c.x != null && c.y != null) discovered.push(c);
+    }
+    if (discovered.length === 0) return;
+
+    // Find bounding box in data space
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const c of discovered) {
+      minX = Math.min(minX, c.x);
+      maxX = Math.max(maxX, c.x);
+      minY = Math.min(minY, -c.y); // note: y is flipped (higher y = ancient = bottom)
+      maxY = Math.max(maxY, -c.y);
+    }
+
+    // Add padding
+    const padFraction = 0.4;
+    const rangeX = Math.max(0.3, maxX - minX);
+    const rangeY = Math.max(0.3, maxY - minY);
+
+    // Target zoom: fit the bounding box into 60% of the canvas with padding
+    const baseScale = Math.min(W, H) * 0.65; // matches _csNodeScreenPos scale at zoom=1
+    const targetZoom = Math.min(
+      (W * 0.6) / (rangeX * baseScale + 1),
+      (H * 0.6) / (rangeY * baseScale + 1),
+      2.5  // cap zoom
+    );
+
+    // Target offset: center the bounding box
+    const midDataX = (minX + maxX) / 2;
+    const midDataY = (minY + maxY) / 2;  // already negated
+    this.csZoom = Math.max(0.6, Math.min(2.5, targetZoom));
+    this.csOffsetX = W / 2 - midDataX * Math.min(W, H) * 0.65 * this.csZoom;
+    this.csOffsetY = H / 2 + midDataY * Math.min(W, H) * 0.65 * this.csZoom;
     this._dirty = true;
   },
 
@@ -199,6 +248,48 @@ const Renderer = {
       }
     }
 
+    // --- Enemy location hints (faint markers visible through fog) ---
+    if (civs) {
+      for (const [civId, civ] of Object.entries(civs)) {
+        if (civId === playerCivId) continue;
+        if (civ.isDefeated) continue;
+        const capQ = civ.capital?.q;
+        const capR = civ.capital?.r;
+        if (capQ === undefined) continue;
+        const isFullyKnown = this._isTileExploredByCoord(capQ, capR, mapTiles, playerCivId);
+        if (isFullyKnown) continue; // already shown via capital marker
+
+        const px = this._hexScreenX(capQ, capR, size);
+        const py = this._hexScreenY(capQ, capR, size);
+        if (px < -size*3 || px > canvas.width+size*3) continue;
+        if (py < -size*3 || py > canvas.height+size*3) continue;
+
+        // Draw a faint pulsing diamond marker
+        const pulse = 0.4 + 0.2 * Math.sin(Date.now() * 0.002 + civId.charCodeAt(0));
+        ctx.save();
+        ctx.globalAlpha = pulse * 0.35;
+        ctx.strokeStyle = civ.color || '#ff4444';
+        ctx.lineWidth = 1.5;
+        const mr = size * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px, py - mr);
+        ctx.lineTo(px + mr * 0.6, py);
+        ctx.lineTo(px, py + mr);
+        ctx.lineTo(px - mr * 0.6, py);
+        ctx.closePath();
+        ctx.stroke();
+        // Small "?" text
+        ctx.globalAlpha = pulse * 0.5;
+        ctx.fillStyle = civ.color || '#ff4444';
+        ctx.font = `bold ${Math.max(8, size * 0.3)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('?', px, py);
+        ctx.restore();
+      }
+      this._dirty = true;
+    }
+
     // --- Selected hex highlight (drawn on top) --------------------------------
     if (this.selectedHex) {
       const px = this._hexScreenX(this.selectedHex.q, this.selectedHex.r, size);
@@ -216,6 +307,42 @@ const Renderer = {
       this.drawHex(ctx, this.hoveredHex.q, this.hoveredHex.r,
         'rgba(255,255,255,0.06)', 'rgba(255,255,255,0.4)', 1.5, size);
     }
+
+    // --- Moving unit animations ---
+    const now = Date.now();
+    this._unitMoveAnims = (this._unitMoveAnims || []).filter(anim => {
+      const t = Math.min(1, (now - anim.startTime) / anim.duration);
+      // Ease in-out
+      const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+      const cx = anim.fromX + (anim.toX - anim.fromX) * ease;
+      const cy = anim.fromY + (anim.toY - anim.fromY) * ease;
+
+      // Draw moving unit as a glowing dot trailing a line
+      ctx.save();
+      // Trail line
+      ctx.beginPath();
+      ctx.moveTo(anim.fromX, anim.fromY);
+      ctx.lineTo(cx, cy);
+      ctx.strokeStyle = anim.civColor;
+      ctx.globalAlpha = (1 - ease) * 0.5;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Moving unit dot
+      const r = size * 0.18;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = anim.civColor;
+      ctx.shadowColor = anim.civColor;
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+
+      if (t < 1) this._dirty = true;
+      return t < 1; // keep in array until done
+    });
   },
 
   // ---------------------------------------------------------------------------
@@ -884,21 +1011,49 @@ const Renderer = {
         });
       }
 
+      const isPlayerCiv = (tile.owner === playerCivId);
+
       for (let d = 0; d < 6; d++) {
         const dir   = dirs[d];
         const nbKey = `${tile.q + dir.q},${tile.r + dir.r}`;
         const nbTile = mapTiles.get(nbKey);
         const nbOwner = nbTile ? nbTile.owner : null;
 
-        // Draw border if neighbour has different owner or is outside the map
-        if (nbOwner !== tile.owner) {
-          const [ci, cj] = edgeCorners[d];
-          ctx.beginPath();
-          ctx.moveTo(corners[ci].x, corners[ci].y);
-          ctx.lineTo(corners[cj].x, corners[cj].y);
-          ctx.strokeStyle = borderColor;
-          ctx.lineWidth   = 3 * this.mapZoom;
-          ctx.stroke();
+        const [ci, cj] = edgeCorners[d];
+
+        if (isPlayerCiv) {
+          // Player territory: draw on all outer edges (any neighbor not owned by player)
+          if (nbOwner !== tile.owner) {
+            ctx.beginPath();
+            ctx.moveTo(corners[ci].x, corners[ci].y);
+            ctx.lineTo(corners[cj].x, corners[cj].y);
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth   = 3.5 * this.mapZoom;
+            ctx.globalAlpha = 1.0;
+            ctx.stroke();
+
+            // Glow pass: wider line at low alpha
+            ctx.beginPath();
+            ctx.moveTo(corners[ci].x, corners[ci].y);
+            ctx.lineTo(corners[cj].x, corners[cj].y);
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth   = 6 * this.mapZoom;
+            ctx.globalAlpha = 0.15;
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+          }
+        } else {
+          // Enemy territory: only draw on edges facing unowned (null) tiles
+          if (nbOwner === null || nbOwner === undefined) {
+            ctx.beginPath();
+            ctx.moveTo(corners[ci].x, corners[ci].y);
+            ctx.lineTo(corners[cj].x, corners[cj].y);
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth   = 1.5 * this.mapZoom;
+            ctx.globalAlpha = 0.6;
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+          }
         }
       }
     }
@@ -1644,6 +1799,12 @@ const Renderer = {
     const canvas = this.csCanvas;
     if (!ctx || !canvas) return;
 
+    // Auto-fit to discovered concepts if flagged
+    if (this._needsFit) {
+      this.fitToDiscovered(ideaSpaceState?.discoveredSet);
+      this._needsFit = false;
+    }
+
     const W = canvas.width;
     const H = canvas.height;
 
@@ -2035,6 +2196,7 @@ const Renderer = {
       duration:  1500,  // 1.5 seconds
       onComplete: onComplete || null,
     });
+    this._needsFit = true;
     this._dirty = true;
   },
 
@@ -2230,6 +2392,7 @@ const Renderer = {
 
       // Always re-render if discovery animations are active
       if (self._discoveryAnims.length > 0) self._dirty = true;
+      if (self._unitMoveAnims && self._unitMoveAnims.length > 0) self._dirty = true;
 
       if (!self._dirty) return;
       self._dirty = false;
@@ -2256,6 +2419,26 @@ const Renderer = {
    * Mark the renderer dirty so the next frame will redraw.
    */
   markDirty() {
+    this._dirty = true;
+  },
+
+  animateUnitMove(unitId, fromQ, fromR, toQ, toR, civColor, unitType) {
+    const size = this.hexSize * this.mapZoom;
+    const fromX = this._hexScreenX(fromQ, fromR, size);
+    const fromY = this._hexScreenY(fromQ, fromR, size);
+    const toX   = this._hexScreenX(toQ,   toR,   size);
+    const toY   = this._hexScreenY(toQ,   toR,   size);
+
+    // Remove any existing anim for this unit
+    this._unitMoveAnims = this._unitMoveAnims.filter(a => a.unitId !== unitId);
+
+    this._unitMoveAnims.push({
+      unitId, fromX, fromY, toX, toY,
+      startTime: Date.now(),
+      duration: 450,  // ms
+      civColor: civColor || '#ffffff',
+      unitType: unitType || 'warrior',
+    });
     this._dirty = true;
   },
 
@@ -2435,7 +2618,7 @@ const Renderer = {
     const W = this.csCanvas.width;
     const H = this.csCanvas.height;
     const style = "rgba(255,255,255,0.25)";
-    const font  = "11px 'Courier New'";
+    const font  = "10px 'Courier New'";
     ctx.font         = font;
     ctx.fillStyle    = style;
     ctx.textAlign    = 'center';
@@ -2452,18 +2635,18 @@ const Renderer = {
     // Edge labels
     ctx.fillStyle = style;
     ctx.textAlign = 'center';
-    ctx.fillText('ANCIENT', W / 2, H - 14);
-    ctx.fillText('MODERN / FUTURE', W / 2, 14);
+    ctx.fillText('ANCIENT', W / 2, H - 5);
+    ctx.fillText('MODERN / FUTURE', W / 2, 5);
     // Left: rotated
     ctx.save();
-    ctx.translate(14, H / 2);
+    ctx.translate(5, H / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.fillText('PHYSICAL / HARDWARE', 0, 0);
     ctx.restore();
     // Right: rotated
     ctx.save();
-    ctx.translate(W - 14, H / 2);
+    ctx.translate(W - 5, H / 2);
     ctx.rotate(Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.fillText('ABSTRACT / THEORY', 0, 0);
@@ -2482,10 +2665,11 @@ const Renderer = {
       if (!groups[node.cluster]) groups[node.cluster] = [];
       groups[node.cluster].push(node);
     }
-    ctx.font         = "24px 'Courier New'";
-    ctx.fillStyle    = 'rgba(255,255,255,0.07)';
+    ctx.font         = "14px 'Courier New'";
+    ctx.fillStyle    = 'rgba(255,255,255,0.10)';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
+    const margin = 50;
     for (const [cluster, clusterNodes] of Object.entries(groups)) {
       let sumX = 0, sumY = 0, count = 0;
       for (const n of clusterNodes) {
@@ -2497,6 +2681,8 @@ const Renderer = {
       if (count === 0) continue;
       const cx = sumX / count;
       const cy = sumY / count;
+      // Only draw if centroid is within canvas bounds + margin
+      if (cx < -margin || cx > W + margin || cy < -margin || cy > H + margin) continue;
       const meta = (typeof CLUSTER_META !== 'undefined') ? CLUSTER_META[cluster] : null;
       const label = meta ? (meta.name || cluster) : cluster;
       ctx.fillText(label.toUpperCase(), cx, cy);
@@ -2538,7 +2724,7 @@ const Renderer = {
     // Base normalized -> canvas pixel (scale by csZoom, center on csOffset)
     const canvasW = this.csCanvas ? this.csCanvas.width  : 800;
     const canvasH = this.csCanvas ? this.csCanvas.height : 600;
-    const scale   = Math.min(canvasW, canvasH) * 0.42 * this.csZoom;
+    const scale   = Math.min(canvasW, canvasH) * 0.65 * this.csZoom;
 
     // Use x/y from CONCEPTS data (normalized -1..1 range)
     const baseX = (node.x || 0) * scale + this.csOffsetX;
@@ -2648,43 +2834,20 @@ const Renderer = {
     }
   },
 
-  /** Update or hide the #map-tooltip DOM element. */
+  /** Update tooltip position; content is set by UI.onHexHovered. */
   _updateMapTooltip(clientX, clientY, hex) {
-    let tooltip = document.getElementById('map-tooltip');
+    const tooltip = document.getElementById('map-tooltip');
     if (!tooltip) return;
-
-    // Try to get tile info from game state
-    const gs   = this._getGameState ? this._getGameState() : null;
-    const tileMap = gs && (gs.mapTiles || gs.map);
-    const tile = tileMap ? tileMap.get(`${hex.q},${hex.r}`) : null;
-    if (!tile) { this._hideMapTooltip(); return; }
-
-    const tileData = (typeof TILE_TYPES !== 'undefined') ? TILE_TYPES[tile.type] : null;
-    if (!tileData) { this._hideMapTooltip(); return; }
-
-    const isExplored = this._isTileExplored(tile, gs.playerCivId);
-    if (!isExplored) {
-      tooltip.innerHTML = '<div class="tt-fog">Unexplored territory</div>';
-    } else {
-      const res = tileData.baseResources || {};
-      const resStr = Object.entries(res).map(([k, v]) => `${k}:${v}`).join(', ');
-      const ownerLine = tile.owner
-        ? `<div class="tt-owner">Owner: ${tile.owner}</div>`
-        : '';
-      tooltip.innerHTML =
-        `<div class="tt-name">${tileData.name}</div>` +
-        ownerLine +
-        (resStr ? `<div class="tt-res">${resStr}</div>` : '');
+    if (!tooltip.classList.contains('hidden')) {
+      const rect = this.mapCanvas ? this.mapCanvas.getBoundingClientRect() : { left: 0, top: 0 };
+      tooltip.style.left = (clientX - rect.left + 14) + 'px';
+      tooltip.style.top  = (clientY - rect.top  + 10) + 'px';
     }
-
-    tooltip.style.display = 'block';
-    tooltip.style.left    = `${clientX + 12}px`;
-    tooltip.style.top     = `${clientY + 12}px`;
   },
 
   _hideMapTooltip() {
     const tooltip = document.getElementById('map-tooltip');
-    if (tooltip) tooltip.style.display = 'none';
+    if (tooltip) tooltip.classList.add('hidden');
   },
 
   /**

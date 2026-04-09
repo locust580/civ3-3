@@ -690,6 +690,86 @@ const IdeaSpace = {
   },
 
   // ---------------------------------------------------------------------------
+  // DIRECT RESEARCH
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get concepts available to research directly (spend RP to learn without combining).
+   * Returns array of { concept, cost, affordable } objects.
+   * Available if:
+   *   1. Concept is tier 1, 2, or 3
+   *   2. Player has proficiency >= 1 in concept's branch (for tier 2-3)
+   *   3. Concept is not yet discovered
+   *   4. Concept exists in global CONCEPTS
+   *
+   * @param {Object} branchProficiency
+   * @param {number} researchPoints
+   * @returns {Array<{concept, cost, affordable, branch, prof}>}
+   */
+  getResearchableConepts(branchProficiency, researchPoints) {
+    const available = [];
+    const allConcepts = (typeof CONCEPTS !== 'undefined') ? { ...CONCEPTS } : {};
+
+    for (const [id, concept] of Object.entries(allConcepts)) {
+      if (this.discoveredConcepts.has(id)) continue;
+      if ((concept.tier || 1) > 3) continue; // only tier 1-3 directly researchable
+
+      const branch = (typeof CLUSTER_TO_BRANCH !== 'undefined')
+        ? CLUSTER_TO_BRANCH[concept.cluster] : null;
+      const prof = branch ? (branchProficiency[branch] || 0) : 0;
+      if (prof < 1 && (concept.tier || 1) > 1) continue; // need prof >= 1 for tier 2-3
+
+      // Cost: tier * 12, reduced by branch proficiency (up to 50% off at prof 10)
+      const baseCost = (concept.tier || 1) * 12;
+      const discount = Math.min(0.5, prof * 0.05);
+      const cost = Math.round(baseCost * (1 - discount));
+
+      available.push({ concept, cost, affordable: researchPoints >= cost, branch, prof });
+    }
+
+    // Sort: tier 1 first, then by branch proficiency (higher prof = more accessible = first)
+    available.sort((a, b) => {
+      if (a.concept.tier !== b.concept.tier) return a.concept.tier - b.concept.tier;
+      return b.prof - a.prof;
+    });
+
+    return available.slice(0, 20); // cap at 20 visible at a time
+  },
+
+  /**
+   * Research a concept directly (spend RP).
+   * Returns { success, actualCost, message }
+   *
+   * @param {string} conceptId
+   * @param {Object} branchProficiency
+   * @param {number} researchPoints
+   * @returns {{success: boolean, actualCost: number, concept: object|null, message: string}}
+   */
+  researchDirect(conceptId, branchProficiency, researchPoints) {
+    if (this.discoveredConcepts.has(conceptId)) {
+      return { success: false, message: 'Already known.' };
+    }
+    const allConcepts = (typeof CONCEPTS !== 'undefined') ? CONCEPTS : {};
+    const concept = allConcepts[conceptId];
+    if (!concept) return { success: false, message: 'Concept not found.' };
+
+    const branch = (typeof CLUSTER_TO_BRANCH !== 'undefined')
+      ? CLUSTER_TO_BRANCH[concept.cluster] : null;
+    const prof = branch ? (branchProficiency[branch] || 0) : 0;
+
+    const baseCost = (concept.tier || 1) * 12;
+    const discount = Math.min(0.5, prof * 0.05);
+    const actualCost = Math.round(baseCost * (1 - discount));
+
+    if (researchPoints < actualCost) {
+      return { success: false, actualCost, message: `Need ${actualCost} RP.` };
+    }
+
+    this.discover(conceptId);
+    return { success: true, actualCost, concept, message: `Researched: ${concept.name}` };
+  },
+
+  // ---------------------------------------------------------------------------
   // SERIALIZE / DESERIALIZE
   // ---------------------------------------------------------------------------
 

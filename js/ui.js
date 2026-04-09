@@ -265,6 +265,22 @@ const UI = {
       btnOpenIdea.addEventListener('click', () => this.openIdeaLab());
     }
 
+    // Map tooltip mouse-tracking
+    const mapContainer = document.getElementById('map-container');
+    if (mapContainer) {
+      mapContainer.addEventListener('mousemove', (e) => {
+        const tooltip = document.getElementById('map-tooltip');
+        if (tooltip && !tooltip.classList.contains('hidden')) {
+          tooltip.style.left = (e.offsetX + 14) + 'px';
+          tooltip.style.top  = (e.offsetY + 10) + 'px';
+        }
+      });
+      mapContainer.addEventListener('mouseleave', () => {
+        const tooltip = document.getElementById('map-tooltip');
+        if (tooltip) tooltip.classList.add('hidden');
+      });
+    }
+
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       // Only active while the game screen is visible
@@ -351,6 +367,17 @@ const UI = {
     }
 
     // Resource bar — each resource value + (income/turn shown as title tooltip)
+    const RESOURCE_DESCRIPTIONS = {
+      energy:    'Powers all buildings and units. Deficit destroys units.',
+      silicon:   'Core construction material for all buildings and most units.',
+      research:  'Spent in the Idea Lab to synthesize or directly research concepts.',
+      data:      'Fuels advanced computations and unlocks late-game buildings.',
+      compute:   'Your civilization\'s processing power — the primary victory metric.',
+      rareEarth: 'Required for advanced-tier buildings and elite units.',
+      quantum:   'Unlocks quantum-era technologies. Rare and precious.',
+      copper:    'Secondary construction material used with silicon in many buildings.',
+      military:  'Represents your army production capacity.',
+    };
     const res  = playerCiv.resources      || {};
     const inc  = playerCiv.resourceIncome || {};
 
@@ -374,7 +401,8 @@ const UI = {
       const parent = el.closest('.resource-item');
       if (parent && income !== null) {
         const sign = income >= 0 ? '+' : '';
-        parent.title = `${info.key}: ${val}  (${sign}${income}/turn)`;
+        const desc = RESOURCE_DESCRIPTIONS[info.key] || info.key;
+        parent.title = `${info.key}: ${val}  (${sign}${income}/turn)\n${desc}`;
         // Also add a small income badge if the container allows it
         let badge = parent.querySelector('.res-income');
         if (!badge) {
@@ -454,7 +482,7 @@ const UI = {
         ? playerCiv.diplomacy[civ.id]
         : 'neutral';
 
-      const diploLabel = { war: '⚔️ War', peace: '🤝 Peace', neutral: '— Neutral' }[diploStatus] || diploStatus;
+      const diploLabel = { war: 'At War', peace: 'At Peace', neutral: 'Neutral' }[diploStatus] || diploStatus;
       const diploClass = { war: 'diplo-war', peace: 'diplo-peace', neutral: 'diplo-neutral' }[diploStatus] || '';
 
       // Compute comparison
@@ -473,7 +501,7 @@ const UI = {
         </div>
         <div class="civ-list-stats">
           <span class="civ-compute" style="color:${compareColor}" title="Their compute vs yours">
-            ⚙️ ${theirCompute} ${compareSign}
+            Compute: ${theirCompute} ${compareSign}
           </span>
         </div>
         ${isDead ? '<div class="civ-dead-label">Eliminated</div>' : `
@@ -581,12 +609,13 @@ const UI = {
    * @param {number} r
    */
   onHexHovered(q, r) {
+    // existing: update Renderer.hoveredHex
     if (typeof Renderer !== 'undefined') {
       Renderer.hoveredHex = (q !== null && r !== null) ? { q, r } : null;
       Renderer.markDirty();
     }
 
-    // Update map tooltip
+    // NEW: show hover tooltip for building or unit on this tile
     const tooltip = document.getElementById('map-tooltip');
     if (!tooltip) return;
 
@@ -595,17 +624,87 @@ const UI = {
       return;
     }
 
-    const tile = (typeof GameEngine !== 'undefined' && GameEngine.state?.map)
-      ? GameEngine.state.map.get(`${q},${r}`)
-      : null;
+    const state = GameEngine?.state;
+    if (!state) { tooltip.classList.add('hidden'); return; }
 
+    const tile = state.map?.get ? state.map.get(`${q},${r}`) : null;
     if (!tile) { tooltip.classList.add('hidden'); return; }
 
-    const tileType = (typeof TILE_TYPES !== 'undefined') ? TILE_TYPES[tile.type] : null;
-    const typeName = tileType ? tileType.name : tile.type;
-    const yields   = this._formatResources(tileType?.baseResources || {});
+    // Build tooltip content
+    let html = '';
 
-    tooltip.textContent = `${typeName}${yields ? ` — ${yields}` : ''}`;
+    // Tile name header
+    const tileData = typeof TILE_TYPES !== 'undefined' ? TILE_TYPES[tile.type] : null;
+    if (tileData) {
+      html += `<div class="tt-tile-name">${tileData.name}</div>`;
+    }
+
+    // Building info
+    if (tile.building) {
+      const allBuildings = {};
+      if (typeof BUILDINGS !== 'undefined') Object.assign(allBuildings, BUILDINGS);
+      if (typeof BRANCH_RESEARCH_BUILDINGS !== 'undefined') Object.assign(allBuildings, BRANCH_RESEARCH_BUILDINGS);
+      const bld = allBuildings[tile.building];
+      if (bld) {
+        html += `<div class="tt-section">`;
+        html += `<div class="tt-name">${bld.name}</div>`;
+        html += `<div class="tt-desc">${bld.description || ''}</div>`;
+        if (bld.production && Object.keys(bld.production).length > 0) {
+          const prod = Object.entries(bld.production)
+            .map(([k, v]) => `+${v} ${k}`).join(', ');
+          html += `<div class="tt-stat">Produces: <span class="tt-value">${prod}</span></div>`;
+        }
+        if (bld.defense) {
+          html += `<div class="tt-stat">Defense: <span class="tt-value">+${bld.defense}</span></div>`;
+        }
+        if (bld.branchBoost) {
+          const b = bld.branchBoost;
+          html += `<div class="tt-stat">Branch: <span class="tt-value">+${b.amount} ${b.branch}</span></div>`;
+        }
+        if (bld.requires?.length) {
+          html += `<div class="tt-requires">Requires: ${bld.requires.join(', ')}</div>`;
+        }
+        html += `</div>`;
+      }
+    }
+
+    // Unit info
+    if (tile.units?.length > 0) {
+      for (const unit of tile.units.slice(0, 2)) {
+        const unitDef = typeof UNIT_TYPES !== 'undefined' ? UNIT_TYPES[unit.type] : null;
+        if (!unitDef) continue;
+        const civs = state.civs;
+        const ownerCiv = civs?.[unit.civId];
+        const ownerName = ownerCiv ? (typeof FACTIONS !== 'undefined' ? FACTIONS[ownerCiv.factionId]?.name : ownerCiv.factionId) : 'Unknown';
+        html += `<div class="tt-section">`;
+        html += `<div class="tt-name">${unitDef.name}</div>`;
+        html += `<div class="tt-desc">${unitDef.description || ''}</div>`;
+        html += `<div class="tt-stat">Owner: <span class="tt-value">${ownerName}</span></div>`;
+        html += `<div class="tt-stat">ATK <span class="tt-value">${unitDef.attack}</span>  DEF <span class="tt-value">${unitDef.defense}</span>  MOV <span class="tt-value">${unitDef.movement}</span></div>`;
+        const hp = unit.hp ?? unitDef.health ?? 10;
+        const maxHp = unit.maxHp ?? unitDef.health ?? 10;
+        html += `<div class="tt-stat">HP: <span class="tt-value">${hp}/${maxHp}</span></div>`;
+        html += `</div>`;
+      }
+      if (tile.units.length > 2) {
+        html += `<div class="tt-more">+${tile.units.length - 2} more units</div>`;
+      }
+    }
+
+    if (!html) {
+      // Just terrain info
+      if (tileData?.description) {
+        html += `<div class="tt-desc">${tileData.description}</div>`;
+        const res = tileData.baseResources;
+        if (res && Object.keys(res).length > 0) {
+          html += `<div class="tt-stat">Yields: <span class="tt-value">${Object.entries(res).map(([k,v])=>+v+' '+k).join(', ')}</span></div>`;
+        }
+      }
+    }
+
+    if (!html) { tooltip.classList.add('hidden'); return; }
+
+    tooltip.innerHTML = html;
     tooltip.classList.remove('hidden');
   },
 
@@ -1105,6 +1204,9 @@ const UI = {
       const canSynth = IdeaSpace.mixSlots[0] && IdeaSpace.mixSlots[1];
       btnSynth.disabled = !canSynth;
     }
+
+    // Research panel
+    this._renderResearchPanel();
   },
 
   /**
@@ -1682,6 +1784,74 @@ const UI = {
   },
 
   // ── PRIVATE HELPERS ──────────────────────────────────────────────────────────
+
+  /**
+   * Render the direct research panel in #research-panel.
+   * @private
+   */
+  _renderResearchPanel() {
+    const container = document.getElementById('research-panel');
+    if (!container) return;
+
+    const playerCiv = GameEngine.getPlayerCiv ? GameEngine.getPlayerCiv() : null;
+    if (!playerCiv) return;
+
+    const rp = playerCiv.resources?.research || 0;
+    const bp = playerCiv.branchProficiency || {};
+    const available = IdeaSpace.getResearchableConepts(bp, rp);
+
+    if (available.length === 0) {
+      container.innerHTML = '<div class="research-empty">All accessible concepts known. Advance branch proficiency to unlock more.</div>';
+      return;
+    }
+
+    // Group by branch
+    const byBranch = {};
+    for (const item of available) {
+      const key = item.branch || 'other';
+      if (!byBranch[key]) byBranch[key] = [];
+      byBranch[key].push(item);
+    }
+
+    let html = '';
+    for (const [branch, items] of Object.entries(byBranch)) {
+      const branchMeta = (typeof RESEARCH_BRANCHES !== 'undefined') ? RESEARCH_BRANCHES[branch] : null;
+      const branchColor = branchMeta?.color || '#888';
+      const branchLabel = branchMeta?.label || branch;
+      html += `<div class="research-branch-group">
+        <div class="research-branch-header" style="color:${branchColor}">${branchLabel}</div>`;
+      for (const { concept, cost, affordable } of items) {
+        html += `<div class="research-item ${affordable ? 'affordable' : 'unaffordable'}" data-concept-id="${concept.id}">
+          <div class="research-item-name">${concept.name}</div>
+          <div class="research-item-desc">${concept.description || ''}</div>
+          <div class="research-item-cost">${affordable ? '' : '⚠ '}${cost} RP</div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    container.innerHTML = html;
+
+    // Wire click handlers
+    container.querySelectorAll('.research-item.affordable').forEach(el => {
+      el.addEventListener('click', () => {
+        const conceptId = el.dataset.conceptId;
+        const result = IdeaSpace.researchDirect(conceptId, bp, rp);
+        if (result.success) {
+          playerCiv.resources.research = Math.max(0, rp - result.actualCost);
+          UI.showNotification(`Researched: ${result.concept.name}`, 'success');
+          if (typeof Renderer !== 'undefined') {
+            Renderer.animateDiscovery(conceptId, () => {});
+            Renderer._needsFit = true;
+            Renderer.markDirty();
+          }
+          UI.updateIdeaLab();
+          UI.updateTopBar();
+        } else {
+          UI.showNotification(result.message, 'warning');
+        }
+      });
+    });
+  },
 
   /**
    * Safely set the textContent of an element by id.

@@ -161,7 +161,7 @@ function startNewGame(factionId) {
     UI.showNotification('Game engine not found. Check script load order.', 'danger', 5000);
     return;
   }
-  GameEngine.init(factionId, 50, 35, 3);
+  GameEngine.init(factionId, 36, 26, 3);
 
   // ── Initialize IdeaSpace for player faction ────────────────────────────────
   if (typeof IdeaSpace !== 'undefined') {
@@ -264,6 +264,14 @@ function startNewGame(factionId) {
       }
     );
   }
+
+  // ── Unit movement animation listener ──────────────────────────────────────
+  window.addEventListener('unit:moving', (e) => {
+    if (typeof Renderer !== 'undefined' && Renderer.animateUnitMove) {
+      const { unitId, fromQ, fromR, toQ, toR, civColor, unitType } = e.detail;
+      Renderer.animateUnitMove(unitId, fromQ, fromR, toQ, toR, civColor, unitType);
+    }
+  });
 
   // ── Welcome message ────────────────────────────────────────────────────────
   const faction = (typeof FACTIONS !== 'undefined') ? FACTIONS[factionId] : null;

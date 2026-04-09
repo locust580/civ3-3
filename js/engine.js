@@ -409,6 +409,15 @@ const GameEngine = {
       civ.resources[res] = (civ.resources[res] || 0) + val;
     }
 
+    // Branch research building bonus: add extra research per branchBoost building
+    for (const [bKey, bldgId] of civ.buildings) {
+      const allBldgsRes = _allBuildings();
+      const bldgDef = allBldgsRes[bldgId];
+      if (bldgDef?.branchBoost) {
+        civ.resources.research = (civ.resources.research || 0) + bldgDef.branchBoost.amount * 2;
+      }
+    }
+
     // Cap resources.
     const CAPS = {
       energy: 200, silicon: 200, copper: 200, research: 200,
@@ -525,6 +534,42 @@ const GameEngine = {
         civ.branchProficiency[branch] = Math.min(
           10,
           (civ.branchProficiency[branch] || 0) + amount
+        );
+      }
+    }
+
+    // If this is a branch research building, auto-discover one tier-1 concept from that branch
+    const allBuildings2 = {};
+    if (typeof BUILDINGS !== 'undefined') Object.assign(allBuildings2, BUILDINGS);
+    if (typeof BRANCH_RESEARCH_BUILDINGS !== 'undefined') Object.assign(allBuildings2, BRANCH_RESEARCH_BUILDINGS);
+    const bldDef = allBuildings2[buildingId];
+
+    if (bldDef?.branchBoost && bldDef.branchBoost.branch !== 'all') {
+      const targetBranch = bldDef.branchBoost.branch;
+      const allConcepts = typeof CONCEPTS !== 'undefined' ? CONCEPTS : {};
+      const clusterToBranch = typeof CLUSTER_TO_BRANCH !== 'undefined' ? CLUSTER_TO_BRANCH : {};
+
+      // Find tier-1 concepts in this branch that civ doesn't know
+      const candidates = Object.values(allConcepts).filter(c => {
+        const branch = clusterToBranch[c.cluster];
+        return branch === targetBranch &&
+               c.tier === 1 &&
+               !civ.discoveries.has(c.id);
+      });
+
+      if (candidates.length > 0) {
+        // Auto-discover the first one (most accessible)
+        const toLearn = candidates[0];
+        civ.discoveries.add(toLearn.id);
+
+        // If this is the player, also update IdeaSpace
+        if (!civ.isAI && typeof IdeaSpace !== 'undefined') {
+          IdeaSpace.discover(toLearn.id);
+        }
+
+        this.addMessage(
+          `${bldDef.name} revealed "${toLearn.name}" — a ${targetBranch} concept.`,
+          'success'
         );
       }
     }
@@ -693,6 +738,11 @@ const GameEngine = {
         combatResult,
       };
     }
+
+    // Trigger movement animation (dispatch BEFORE updating position)
+    window.dispatchEvent(new CustomEvent('unit:moving', {
+      detail: { unitId: unit.id, fromQ: unit.q, fromR: unit.r, toQ: targetQ, toR: targetR, civColor: civ.color, unitType: unit.type }
+    }));
 
     // Move the unit.
     const sourceTile = this.getTile(unit.q, unit.r);

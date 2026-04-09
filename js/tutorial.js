@@ -743,13 +743,11 @@ window.Tutorial = Tutorial;
       z-index: 500;
       pointer-events: none;
     }
-    #tutorial-overlay.active {
+    #tutorial-bubble {
       pointer-events: auto;
     }
-    /* Let click-through to game elements except the bubble itself */
-    #tutorial-overlay.active #tutorial-bubble,
-    #tutorial-overlay.active #tutorial-step-counter {
-      pointer-events: auto;
+    .tutorial-highlight-target {
+      pointer-events: none;
     }
 
     #tutorial-bubble {
