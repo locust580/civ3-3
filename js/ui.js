@@ -397,21 +397,25 @@ const UI = {
       const val = Math.floor(res[info.key] || 0);
       const income = inc[info.key] != null ? inc[info.key] : null;
       el.textContent = val;
-      // Show income as a tooltip on the parent .resource-item
+      // Show income badge and hover tooltip on the parent .resource-item
       const parent = el.closest('.resource-item');
-      if (parent && income !== null) {
-        const sign = income >= 0 ? '+' : '';
+      if (parent) {
+        const sign = income != null ? (income >= 0 ? '+' : '') : '';
         const desc = RESOURCE_DESCRIPTIONS[info.key] || info.key;
-        parent.title = `${info.key}: ${val}  (${sign}${income}/turn)\n${desc}`;
-        // Also add a small income badge if the container allows it
+        const incomeText = income != null ? ` (${sign}${income}/turn)` : '';
+        // Set data-tooltip for CSS hover tooltip
+        parent.setAttribute('data-tooltip', `${info.key}${incomeText}\n${desc}`);
+        // Small income badge
         let badge = parent.querySelector('.res-income');
         if (!badge) {
           badge = document.createElement('span');
           badge.className = 'res-income';
           parent.appendChild(badge);
         }
-        badge.textContent = `${sign}${income}`;
-        badge.style.color = income >= 0 ? '#6f6' : '#f66';
+        if (income != null) {
+          badge.textContent = `${sign}${income}`;
+          badge.style.color = income >= 0 ? '#6f6' : '#f66';
+        }
       }
     }
   },
@@ -601,6 +605,9 @@ const UI = {
     }
 
     this.updateRightPanel();
+
+    // Notify tutorial that a hex was selected
+    window.dispatchEvent(new CustomEvent('tutorial:action', { detail: { type: 'hex_selected' } }));
   },
 
   /**
@@ -934,11 +941,10 @@ const UI = {
     };
 
     const playerRes    = playerCiv.resources  || {};
-    const playerConcepts = playerCiv.concepts || (
-      typeof IdeaSpace !== 'undefined'
-        ? Array.from(IdeaSpace.discoveredConcepts)
-        : []
-    );
+    // Use the engine's discoveries Set as source of truth for requirement checks
+    const playerConcepts = playerCiv.discoveries
+      ? Array.from(playerCiv.discoveries)
+      : (typeof IdeaSpace !== 'undefined' ? Array.from(IdeaSpace.discoveredConcepts) : []);
 
     // Categorise buildings
     const CATEGORIES = {
@@ -1017,7 +1023,7 @@ const UI = {
           item.addEventListener('click', () => {
             if (typeof GameEngine !== 'undefined' && GameEngine.buildOnTile) {
               const ok = GameEngine.buildOnTile(playerCiv.id, q, r, bId);
-              if (ok) {
+              if (ok && ok.success) {
                 this.showNotification(`${bldg.name} constructed.`, 'success');
                 // Brief animation
                 item.classList.add('just-built');
@@ -1025,7 +1031,7 @@ const UI = {
                 this.updateAllUI();
                 if (typeof Renderer !== 'undefined') Renderer.markDirty();
               } else {
-                this.showNotification(`Cannot build ${bldg.name} here.`, 'warning');
+                this.showNotification(ok ? ok.message : `Cannot build ${bldg.name} here.`, 'warning');
               }
             }
           });
@@ -1054,11 +1060,9 @@ const UI = {
     if (!playerCiv) return;
 
     const playerRes      = playerCiv.resources || {};
-    const playerConcepts = playerCiv.concepts || (
-      typeof IdeaSpace !== 'undefined'
-        ? Array.from(IdeaSpace.discoveredConcepts)
-        : []
-    );
+    const playerConcepts = playerCiv.discoveries
+      ? Array.from(playerCiv.discoveries)
+      : (typeof IdeaSpace !== 'undefined' ? Array.from(IdeaSpace.discoveredConcepts) : []);
 
     // Replace content with a CIV-style unit list
     actionsEl.innerHTML = '';
@@ -1076,9 +1080,9 @@ const UI = {
 
       // Build stats string from unit properties
       const statParts = [];
-      if (uType.attack  != null) statParts.push(`ATK ${uType.attack}`);
-      if (uType.defense != null) statParts.push(`DEF ${uType.defense}`);
-      if (uType.move    != null) statParts.push(`MOV ${uType.move}`);
+      if (uType.attack    != null) statParts.push(`ATK ${uType.attack}`);
+      if (uType.defense   != null) statParts.push(`DEF ${uType.defense}`);
+      if (uType.movement  != null) statParts.push(`MOV ${uType.movement}`);
       const statsStr = statParts.join('  ');
 
       const costStr = costEntries.map(([res, n]) => `${n} ${res}`).join(', ') || 'Free';
@@ -1106,13 +1110,13 @@ const UI = {
         item.addEventListener('click', () => {
           if (typeof GameEngine !== 'undefined' && GameEngine.trainUnit) {
             const ok = GameEngine.trainUnit(playerCiv.id, q, r, uId);
-            if (ok) {
+            if (ok && ok.success) {
               this.showNotification(`${uType.name} deployed.`, 'success');
               item.classList.add('just-trained');
               setTimeout(() => item.classList.remove('just-trained'), 500);
               this.updateAllUI();
             } else {
-              this.showNotification(`Cannot train ${uType.name} here.`, 'warning');
+              this.showNotification(ok ? ok.message : `Cannot train ${uType.name} here.`, 'warning');
             }
           }
         });
@@ -1136,16 +1140,40 @@ const UI = {
     if (overlay) overlay.classList.remove('hidden');
     this.ideaLabOpen = true;
 
-    // Initialize / resize the concept-space canvas via Renderer if available
-    if (typeof Renderer !== 'undefined' && Renderer.initConceptSpace) {
+    // Wire synthesis chamber tab buttons (idempotent — only wires once per tab btn)
+    document.querySelectorAll('.synth-tab-btn').forEach(btn => {
+      if (btn._synthTabWired) return;
+      btn._synthTabWired = true;
+      btn.addEventListener('click', () => {
+        const tabId = btn.dataset.synthTab;
+        document.querySelectorAll('.synth-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.synth-tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const pane = document.getElementById(`synth-pane-${tabId}`);
+        if (pane) pane.classList.add('active');
+      });
+    });
+
+    // Resize the concept-space canvas to fit its container now that overlay is visible
+    requestAnimationFrame(() => {
       const csContainer = document.getElementById('concept-space-container');
       const csCanvas    = document.getElementById('concept-space-canvas');
       if (csContainer && csCanvas) {
-        csCanvas.width  = csContainer.clientWidth  || 600;
-        csCanvas.height = csContainer.clientHeight || 500;
-        Renderer.initConceptSpace(csCanvas);
+        const w = csContainer.clientWidth  || 600;
+        const h = csContainer.clientHeight || 400;
+        if (csCanvas.width !== w || csCanvas.height !== h) {
+          csCanvas.width  = w;
+          csCanvas.height = h;
+          if (typeof Renderer !== 'undefined') {
+            if (Renderer.csCanvas === csCanvas) {
+              Renderer.csOffsetX = w / 2;
+              Renderer.csOffsetY = h / 2;
+            }
+            Renderer.markDirty();
+          }
+        }
       }
-    }
+    });
 
     this.updateIdeaLab();
 

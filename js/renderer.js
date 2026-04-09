@@ -1426,6 +1426,14 @@ const Renderer = {
       case 'siege':          this._drawUnitSiege(ctx, r, civColor); break;
       case 'cyber_warrior':  this._drawUnitCyberWarrior(ctx, r, civColor); break;
       case 'quantum_agent':  this._drawUnitQuantumAgent(ctx, r, civColor); break;
+      // New unit types — use closest visual approximation
+      case 'drone_swarm':    this._drawUnitDroneSwarm(ctx, r, civColor); break;
+      case 'hacker_unit':    this._drawUnitHacker(ctx, r, civColor); break;
+      case 'artillery':      this._drawUnitArtillery(ctx, r, civColor); break;
+      case 'stealth_unit':   this._drawUnitStealth(ctx, r, civColor); break;
+      case 'medic_drone':    this._drawUnitMedic(ctx, r, civColor); break;
+      case 'titan_construct':this._drawUnitTitan(ctx, r, civColor); break;
+      case 'data_vampire':   this._drawUnitDataVampire(ctx, r, civColor); break;
       default: this._drawUnitGeneric(ctx, r, civColor); break;
     }
 
@@ -1556,6 +1564,88 @@ const Renderer = {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = Math.max(1, r * 0.1);
     ctx.stroke();
+  },
+
+  /** Drone Swarm: cluster of 5 tiny dots */
+  _drawUnitDroneSwarm(ctx, r, color) {
+    const offsets = [[0,-r*0.55],[r*0.5,r*0.3],[-r*0.5,r*0.3],[r*0.3,-r*0.2],[-r*0.3,-r*0.2]];
+    ctx.fillStyle = color;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = Math.max(0.5, r * 0.06);
+    for (const [ox,oy] of offsets) {
+      ctx.beginPath(); ctx.arc(ox, oy, r*0.22, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    }
+  },
+
+  /** Hacker: screen-like rectangle with circuit dots */
+  _drawUnitHacker(ctx, r, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, r * 0.12);
+    ctx.strokeRect(-r*0.65, -r*0.5, r*1.3, r);
+    ctx.fillStyle = color; ctx.globalAlpha = 0.25;
+    ctx.fillRect(-r*0.65, -r*0.5, r*1.3, r); ctx.globalAlpha = 1.0;
+    // Blinking cursor
+    ctx.fillStyle = '#00ffff';
+    ctx.fillRect(-r*0.15, -r*0.15, r*0.08, r*0.35);
+  },
+
+  /** Artillery: barrel + base */
+  _drawUnitArtillery(ctx, r, color) {
+    ctx.fillStyle = color; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1, r*0.1);
+    // base
+    ctx.beginPath(); ctx.rect(-r*0.65, r*0.1, r*1.3, r*0.45); ctx.fill(); ctx.stroke();
+    // barrel (angled)
+    ctx.save(); ctx.rotate(-Math.PI/5);
+    ctx.beginPath(); ctx.rect(-r*0.1, -r*0.7, r*0.22, r*0.75); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  },
+
+  /** Stealth: hollow diamond with dashed outline */
+  _drawUnitStealth(ctx, r, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, r*0.1);
+    ctx.setLineDash([r*0.2, r*0.1]);
+    ctx.beginPath();
+    ctx.moveTo(0, -r*0.85); ctx.lineTo(r*0.65, 0);
+    ctx.lineTo(0, r*0.85);  ctx.lineTo(-r*0.65, 0);
+    ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = color; ctx.globalAlpha = 0.2; ctx.fill(); ctx.globalAlpha = 1.0;
+  },
+
+  /** Medic: circle with cross */
+  _drawUnitMedic(ctx, r, color) {
+    ctx.beginPath(); ctx.arc(0, 0, r*0.85, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.globalAlpha = 0.25; ctx.fill(); ctx.globalAlpha = 1.0;
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1, r*0.1); ctx.stroke();
+    // Green cross
+    ctx.strokeStyle = '#00ff88'; ctx.lineWidth = Math.max(2, r*0.22);
+    ctx.beginPath(); ctx.moveTo(0, -r*0.5); ctx.lineTo(0, r*0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r*0.5, 0); ctx.lineTo(r*0.5, 0); ctx.stroke();
+  },
+
+  /** Titan: large hexagon with inner glow rings */
+  _drawUnitTitan(ctx, r, color) {
+    for (let i = 3; i >= 1; i--) {
+      ctx.beginPath();
+      for (let j = 0; j < 6; j++) {
+        const a = (Math.PI/180)*(60*j); const cr = r*(0.3*i);
+        if (j===0) ctx.moveTo(cr*Math.cos(a), cr*Math.sin(a));
+        else ctx.lineTo(cr*Math.cos(a), cr*Math.sin(a));
+      }
+      ctx.closePath();
+      ctx.fillStyle = color; ctx.globalAlpha = 0.3/i; ctx.fill(); ctx.globalAlpha = 1.0;
+      ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, r*0.08); ctx.stroke();
+    }
+  },
+
+  /** Data Vampire: bat-wing silhouette (two arcs + body circle) */
+  _drawUnitDataVampire(ctx, r, color) {
+    ctx.fillStyle = color;
+    // Left wing
+    ctx.beginPath(); ctx.ellipse(-r*0.6, 0, r*0.5, r*0.3, Math.PI/6, 0, Math.PI*2); ctx.fill();
+    // Right wing
+    ctx.beginPath(); ctx.ellipse(r*0.6, 0, r*0.5, r*0.3, -Math.PI/6, 0, Math.PI*2); ctx.fill();
+    // Body
+    ctx.beginPath(); ctx.arc(0, 0, r*0.35, 0, Math.PI*2);
+    ctx.strokeStyle = '#cc00cc'; ctx.lineWidth = Math.max(1, r*0.1); ctx.stroke(); ctx.fill();
   },
 
   // ---------------------------------------------------------------------------
@@ -2484,12 +2574,13 @@ const Renderer = {
     }
   },
 
-  /** Draw a 20%-opacity civ-colored overlay on a territory hex. */
+  /** Draw a 20%-opacity civ-colored overlay on a territory hex.
+   *  Uses size+0.8 to eliminate anti-aliasing seams between adjacent hexes. */
   _drawTerritoryOverlay(ctx, q, r, civColor, size) {
     const rgb = this._hexColorToRgb(civColor);
     if (!rgb) return;
     const fill = `rgba(${rgb.r},${rgb.g},${rgb.b},0.20)`;
-    this.drawHex(ctx, q, r, fill, null, 0, size);
+    this.drawHex(ctx, q, r, fill, null, 0, size + 0.8);
   },
 
   /** Draw a subtle texture pattern (dots or lines) on the tile based on type. */

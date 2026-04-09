@@ -594,10 +594,14 @@ const Tutorial = {
 
       switch (needed) {
         case 'hex_selected': {
-          // #tile-info has visible content
+          // #tile-info has visible tile data (not just the placeholder prompt)
           const tileInfo = document.getElementById('tile-info');
-          if (tileInfo && tileInfo.textContent.trim().length > 0) {
-            this._firePollAction('hex_selected');
+          if (tileInfo) {
+            const text = tileInfo.textContent.trim();
+            const isPlaceholder = tileInfo.querySelector('.tile-placeholder') !== null;
+            if (text.length > 0 && !isPlaceholder) {
+              this._firePollAction('hex_selected');
+            }
           }
           break;
         }

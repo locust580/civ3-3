@@ -308,21 +308,45 @@ function _tileTotalResources(tile) {
  * @returns {Array<{q:number, r:number}>}
  */
 function findStartingPositions(mapTiles, mapWidth, mapHeight, numCivs) {
-  const minDist = Math.floor(mapWidth / 4);
+  // Use a 2D grid of sectors so civs are spread across both axes.
+  // For numCivs <= 4: 1 row; for 5-8: 2 rows; for 9+: 3 rows.
+  const numRows = numCivs <= 4 ? 1 : numCivs <= 8 ? 2 : 3;
+  const numCols = Math.ceil(numCivs / numRows);
+
+  const sectorW = mapWidth  / numCols;
+  const sectorH = mapHeight / numRows;
+  const minDist = Math.floor(Math.min(sectorW, sectorH) * 0.6);
+
+  // Build sector list (row-major order)
+  const sectors = [];
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
+      if (sectors.length < numCivs) {
+        sectors.push({
+          colMin: col * sectorW,
+          colMax: (col + 1) * sectorW,
+          rowMin: row * sectorH,
+          rowMax: (row + 1) * sectorH,
+        });
+      }
+    }
+  }
+
+  // Shuffle sectors for variety
+  for (let i = sectors.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [sectors[i], sectors[j]] = [sectors[j], sectors[i]];
+  }
+
   const positions = [];
 
-  // Divide map into a numCivs x 1 grid of sectors and find the best tile in each.
-  const sectorWidth = Math.floor(mapWidth / numCivs);
-
-  for (let i = 0; i < numCivs; i++) {
-    const colMin = i * sectorWidth;
-    const colMax = (i === numCivs - 1) ? mapWidth : (i + 1) * sectorWidth;
-
+  for (const sector of sectors) {
     let best = null;
     let bestScore = -Infinity;
 
     for (const [, tile] of mapTiles) {
-      if (tile.col < colMin || tile.col >= colMax) continue;
+      if (tile.col < sector.colMin || tile.col >= sector.colMax) continue;
+      if (tile.row < sector.rowMin || tile.row >= sector.rowMax) continue;
       if (tile.type === 'void_zone' || tile.type === 'cooling_lake') continue;
 
       // Enforce minimum distance from already chosen starts.
@@ -342,21 +366,16 @@ function findStartingPositions(mapTiles, mapWidth, mapHeight, numCivs) {
       }
     }
 
-    if (best) {
-      positions.push(best);
-    }
+    if (best) positions.push(best);
   }
 
-  // If we couldn't find enough sector-based positions (too-close constraint),
-  // fall back to searching globally for the highest-scored remaining tile.
+  // Fallback: if sector search didn't fill all spots, search globally
   if (positions.length < numCivs) {
     for (const [, tile] of mapTiles) {
       if (positions.length >= numCivs) break;
       if (tile.type === 'void_zone' || tile.type === 'cooling_lake') continue;
       const tooClose = positions.some(p => hexDistance(tile.q, tile.r, p.q, p.r) < minDist);
-      if (!tooClose) {
-        positions.push({ q: tile.q, r: tile.r });
-      }
+      if (!tooClose) positions.push({ q: tile.q, r: tile.r });
     }
   }
 

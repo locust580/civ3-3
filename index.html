@@ -241,61 +241,71 @@
 
     <div class="idea-lab-content">
 
-      <!-- LEFT: Concept Space Canvas -->
+      <!-- TOP: Concept Space Canvas -->
       <div id="concept-space-container">
         <canvas id="concept-space-canvas"></canvas>
         <div id="cs-tooltip" class="tooltip hidden"></div>
         <div id="cs-legend" class="cs-legend"></div>
       </div>
 
-      <!-- RIGHT: Synthesis Panel -->
+      <!-- BOTTOM: Synthesis Chamber (horizontal bar with tabs) -->
       <div id="mix-panel">
-        <h3 class="mix-panel-title">Synthesis Chamber</h3>
 
-        <div id="research-display" class="research-display">
-          Research: <span id="rp-display" class="rp-value">0</span> pts
-        </div>
-
-        <!-- Mix Slots -->
-        <div class="mix-slots">
-          <div class="mix-slot" id="mix-slot-0">
-            <div class="slot-label">Concept A</div>
-            <div class="slot-concept" id="slot-concept-0">Click a concept →</div>
-            <button class="btn-clear-slot" data-slot="0" aria-label="Clear slot A">✕</button>
-          </div>
-          <div class="mix-operator">+</div>
-          <div class="mix-slot" id="mix-slot-1">
-            <div class="slot-label">Concept B</div>
-            <div class="slot-concept" id="slot-concept-1">Click a concept →</div>
-            <button class="btn-clear-slot" data-slot="1" aria-label="Clear slot B">✕</button>
+        <!-- Tab Navigation -->
+        <div class="synth-tab-nav">
+          <button class="synth-tab-btn active" data-synth-tab="synthesize">⚗️ Synthesize</button>
+          <button class="synth-tab-btn" data-synth-tab="leads">Research Leads</button>
+          <button class="synth-tab-btn" data-synth-tab="direct">Direct Research</button>
+          <div class="synth-rp-display">
+            Research: <span id="rp-display" class="rp-value">0</span> RP
           </div>
         </div>
 
-        <!-- Combo Preview -->
-        <div id="combo-preview" class="combo-preview hidden">
-          <div class="combo-row">Success: <span id="combo-chance" class="combo-chance">—</span></div>
-          <div class="combo-row">Cost: <span id="combo-cost" class="combo-cost">—</span> RP</div>
-          <div id="combo-distance-warn" class="combo-warn hidden">⚠️ Cross-branch synthesis</div>
+        <!-- Tab Pane: Synthesize -->
+        <div class="synth-tab-pane active" id="synth-pane-synthesize">
+          <!-- Left: Mix slots + Synthesize button -->
+          <div class="synth-pane-left">
+            <div class="mix-slots-horizontal">
+              <div class="mix-slot" id="mix-slot-0">
+                <div class="slot-label">Concept A</div>
+                <div class="slot-concept" id="slot-concept-0">Click a concept →</div>
+                <button class="btn-clear-slot" data-slot="0" aria-label="Clear slot A">✕</button>
+              </div>
+              <div class="mix-operator">+</div>
+              <div class="mix-slot" id="mix-slot-1">
+                <div class="slot-label">Concept B</div>
+                <div class="slot-concept" id="slot-concept-1">Click a concept →</div>
+                <button class="btn-clear-slot" data-slot="1" aria-label="Clear slot B">✕</button>
+              </div>
+            </div>
+            <div id="combo-preview" class="combo-preview hidden">
+              <div class="combo-row">Success: <span id="combo-chance" class="combo-chance">—</span></div>
+              <div class="combo-row">Cost: <span id="combo-cost" class="combo-cost">—</span> RP</div>
+              <div id="combo-distance-warn" class="combo-warn hidden">⚠️ Cross-branch</div>
+            </div>
+            <button class="btn-synthesize" id="btn-synthesize" disabled>⚗️ Synthesize</button>
+            <div id="synthesis-result" class="synthesis-result"></div>
+          </div>
+          <!-- Right: Discovered Concepts list -->
+          <div class="synth-pane-right">
+            <div class="concept-list-header">
+              <h4>Discovered (<span id="concept-count">0</span>)</h4>
+              <input type="text" id="concept-search" placeholder="Search..." autocomplete="off">
+            </div>
+            <div id="concept-list" class="concept-list"></div>
+          </div>
         </div>
 
-        <button class="btn-synthesize" id="btn-synthesize" disabled>⚗️ Synthesize</button>
-
-        <div id="synthesis-result" class="synthesis-result"></div>
-
-        <!-- Discovered Concepts -->
-        <div class="concept-list-header">
-          <h4>Discovered (<span id="concept-count">0</span>)</h4>
-          <input type="text" id="concept-search" placeholder="Search concepts..." autocomplete="off">
+        <!-- Tab Pane: Research Leads -->
+        <div class="synth-tab-pane" id="synth-pane-leads">
+          <div id="hint-list" class="hint-list hint-list-horizontal"></div>
         </div>
-        <div id="concept-list" class="concept-list"></div>
 
-        <!-- Research Leads / Hints -->
-        <h4 class="hints-title">Research Leads</h4>
-        <div id="hint-list" class="hint-list"></div>
-
-        <h4>Direct Research</h4>
-        <p class="research-intro">Spend Research Points to directly learn accessible concepts.</p>
-        <div id="research-panel" class="research-panel"></div>
+        <!-- Tab Pane: Direct Research -->
+        <div class="synth-tab-pane" id="synth-pane-direct">
+          <p class="research-intro">Spend Research Points to directly learn accessible concepts.</p>
+          <div id="research-panel" class="research-panel research-panel-horizontal"></div>
+        </div>
 
       </div><!-- /#mix-panel -->
     </div><!-- /.idea-lab-content -->

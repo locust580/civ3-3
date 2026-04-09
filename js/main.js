@@ -161,7 +161,7 @@ function startNewGame(factionId) {
     UI.showNotification('Game engine not found. Check script load order.', 'danger', 5000);
     return;
   }
-  GameEngine.init(factionId, 36, 26, 3);
+  GameEngine.init(factionId, 44, 32, 7);
 
   // ── Initialize IdeaSpace for player faction ────────────────────────────────
   if (typeof IdeaSpace !== 'undefined') {

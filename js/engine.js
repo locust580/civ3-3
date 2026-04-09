@@ -1060,41 +1060,52 @@ const GameEngine = {
       this.botChooseCombination(civ);
     }
 
-    // --- Priority 4: Expand territory. ---
-    if (civ.turnsSinceExpansion >= 3 && (res.silicon || 0) >= 5) {
+    // --- Priority 4: Expand territory aggressively. ---
+    if (civ.turnsSinceExpansion >= 2 && (res.silicon || 0) >= 3) {
       const expanded = this.botChooseExpansion(civ);
       if (expanded) {
         civ.turnsSinceExpansion = 0;
       }
     }
 
-    // --- Priority 5: Build military if threatened. ---
+    // --- Priority 5: Build military --- bots always maintain a force. ---
     const livingCivs = this.getLivingCivIds();
     const atWar = livingCivs.some(id => id !== civId && civ.diplomacy[id] === 'war');
-    if (atWar && civ.units.length < 3) {
+    // Aggressive bots keep at least 4 units and always have a military forge
+    if (civ.units.length < 4) {
       this.botChooseBuilding(civ, 'military_forge');
-      // Try to train a warrior.
       this._botTrainUnit(civ, 'warrior');
     }
 
     // --- Priority 6: Attack weakest neighbor if at war. ---
     if (atWar) {
       this.botChooseMilitaryTarget(civ);
+      // Also try to train more units during war
+      this._botTrainUnit(civ, 'warrior');
     }
 
-    // --- Priority 7: Declare war if turn > 15 and strong enough. ---
-    if (this.state.turn > 15 && !atWar) {
+    // --- Priority 7: Declare war early — bots are aggressive. ---
+    if (this.state.turn > 5 && !atWar) {
       const myTiles = this._countTiles(civId);
-      // Only declare war if at least as large as the smallest rival.
       const rivals = livingCivs.filter(id => id !== civId);
       if (rivals.length > 0) {
+        // Sort by proximity (if possible) or just by weakest
         rivals.sort((a, b) => this._countTiles(a) - this._countTiles(b));
         const weakest = rivals[0];
         const weakestTiles = this._countTiles(weakest);
-        if (myTiles >= weakestTiles && Math.random() < 0.15) {
+        // Aggressive bots: declare war with 35% chance per turn once turn 5+,
+        // or immediately if already twice as large as the weakest rival
+        const overwhelms = myTiles >= weakestTiles * 2;
+        const chance = overwhelms ? 0.5 : 0.35;
+        if (Math.random() < chance) {
           this.declareWar(civId, weakest);
         }
       }
+    }
+
+    // --- Move units toward nearest enemy capital even when not at war ---
+    if (civ.units.length > 0 && this.state.turn > 3) {
+      this._botMoveUnitsAggressively(civ);
     }
 
     // --- Build something generally useful if resources permit. ---
@@ -1280,6 +1291,60 @@ const GameEngine = {
 
       if (bestTarget) {
         this.attackWith(civ.id, unit.id, bestTarget.q, bestTarget.r);
+      }
+    }
+  },
+
+  /**
+   * Move bot units one step toward nearest enemy capital or territory,
+   * even before war is declared, for aggressive positioning.
+   * @param {object} civ
+   */
+  _botMoveUnitsAggressively(civ) {
+    const living = this.getLivingCivIds();
+    const enemies = living.filter(id => id !== civ.id);
+    if (enemies.length === 0) return;
+
+    // Find nearest enemy capital
+    let nearestTarget = null;
+    let nearestDist = Infinity;
+    for (const enemyId of enemies) {
+      const enemy = this.getCiv(enemyId);
+      if (!enemy || enemy.isDefeated) continue;
+      const ec = enemy.capital;
+      if (!ec) continue;
+      // Use any of our units as reference point
+      for (const unit of civ.units) {
+        const d = hexDistance(unit.q, unit.r, ec.q, ec.r);
+        if (d < nearestDist) {
+          nearestDist = d;
+          nearestTarget = ec;
+        }
+      }
+    }
+
+    if (!nearestTarget) return;
+
+    for (const unit of civ.units) {
+      if (unit.moved) continue;
+      // Move toward target one step
+      const neighbors = hexNeighbors(unit.q, unit.r);
+      let bestNb = null;
+      let bestD = hexDistance(unit.q, unit.r, nearestTarget.q, nearestTarget.r);
+      for (const nb of neighbors) {
+        const nbTile = this.getTile(nb.q, nb.r);
+        if (!nbTile || nbTile.type === 'void_zone') continue;
+        // Don't walk into enemy-occupied tiles unless at war
+        const hasEnemy = (nbTile.units || []).some(u => u.civId !== civ.id);
+        if (hasEnemy && civ.diplomacy[(nbTile.units[0]?.civId)] !== 'war') continue;
+        const d = hexDistance(nb.q, nb.r, nearestTarget.q, nearestTarget.r);
+        if (d < bestD) {
+          bestD = d;
+          bestNb = nb;
+        }
+      }
+      if (bestNb) {
+        this.moveUnit(civ.id, unit.id, bestNb.q, bestNb.r);
       }
     }
   },
