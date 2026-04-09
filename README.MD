@@ -122,3 +122,61 @@ Tutorial system (tutorial.js, 905 lines):
   Right panel (style.css + ui.js): Georgia serif headers, CIV-style bordered action buttons with color coding          
   (gold=build, blue=train, red=attack, green=claim), categorized build menu with affordability coloring, no emoji      
   anywhere in the panel
+
+Third prompt:
+Bug fixes + quality improvements: Firstly, the tutorial breaks at the point where the user is asked to select one of 
+ their own tiles, since the clicks aren't registering I'd imagine. Additionally, the regions that the user owns are    
+also unclear, due to how the region borders for their owned areas are aligned. I need you to make it so that the red   
+borders only face regions that are unoccupied, so that a clear red wall dictates what the user does and does not own.  
+Furthermore, the idea space, no matter how many research buildings I created and turns I waited nor areas I conquered  
+as the security state faction, never had any more than the two ideas I started with. I need you to allow the user,     
+using their starting research points to research more inital ideas. Also, the idea space is far too big for the one    
+region the user can see. Instead scale the viewable area based on what they can currently access in terms of ideas,    
+and allow more freedom of movement when ideas far from their initial idea space are found or discovered. Additionally, 
+ the words behind the regions of ideas are massive and overlap with each other. I need you to increase the space       
+between the ideas so that there's a clearer definition of the different idea regions. Also, make the war/peace buttons 
+ in the style of the building creation panel on the right - less typewriter script and white block, more clean and     
+crisp modern UI. Lastly, make the map smaller so that the AIs can find the player sooner, and on the worldmap add      
+hints to where their general location might be. Back to the research idea, I also need research to come from buildings 
+ researching specific ideas or concepts (or plunder from enemy factions) so that ideas can originate from there and    
+more easily. Also, add a text box when hovering over a given building or troop that provides a greater understanding   
+of what they are: the stats like attacking abilities or production times, and more detailed descriptions that describe 
+ what the building is used for more thoroughly. Add a hover box for the resource menu at the top that provides short   
+descriptions for each material and their uses. Also create animations for troop movements.
+
+Response:
+
+  ┌───────────────────────┬────────────────────────────────────────────────────────────────────────────────────────┐
+  │         Item          │                                     What was built                                     │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Tutorial hex clicks   │ Overlay is now fully click-through — only the bubble intercepts events, the game       │
+  │                       │ canvas receives all clicks normally                                                    │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Territory borders     │ Player border: thick + outer glow on all outer edges. Enemy borders: thin, only on     │
+  │                       │ edges facing unowned tiles, eliminating double-border confusion                        │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Idea space starter    │ "Direct Research" panel in the Idea Lab — spend RP to learn tier 1–3 concepts          │
+  │ concepts              │ immediately; cost scales with tier and discounts with branch proficiency               │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Idea space scaling    │ Auto-fits view to discovered concepts on open + each new discovery; spread increased   │
+  │                       │ so clusters don't crowd together                                                       │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Region label overlap  │ Labels reduced 24px→14px; only draw when centroid is visible on-screen                 │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ War/peace buttons     │ Match the CIV-style bordered action button design                                      │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Smaller map           │ 50×35→36×26; AIs find the player sooner                                                │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ AI location hints     │ Pulsing diamond + "?" visible through fog near each enemy capital                      │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Research buildings →  │ Branch research buildings auto-discover one tier-1 concept from their branch when      │
+  │ concepts              │ placed, and contribute branch-specific RP bonus each turn                              │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Building/unit hover   │ Rich tooltip on map hover: building name, production stats, description; unit          │
+  │ tooltips              │ ATK/DEF/MOV/HP, owner                                                                  │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Resource bar tooltips │ Native title tooltip on each resource showing description and uses                     │
+  ├───────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Troop movement        │ Units glide from hex to hex with ease-in-out interpolation, leaving a fading trail;    │
+  │ animations            │ triggered via unit:moving event from the engine                                        │
+  └───────────────────────┴────────────────────────────────────────────────────────────────────────────────────────┘
