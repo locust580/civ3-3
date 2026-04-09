@@ -196,3 +196,40 @@ resource bar at the top of the screen. Furthermore, I want a more fair distribut
 want them mostly evenly spaced at game start, and for added chaos I want all 8 factions on the board at the same time. 
  Additionally, I want most of the bots to be aggressive, and have their behaviour try to expand towards others as      
 quickly as possible to try and conquer others and their resources. I want you to add more troop types as well.
+
+Response:
+1. Tutorial step 4 fixed (ui.js + tutorial.js)
+  - UI.onHexSelected() now dispatches tutorial:action { type: 'hex_selected' } directly — no more polling required
+  - Tutorial polling also fixed to exclude the placeholder text ("Click a hex to inspect it.")
+
+  2. Building placement bug fixed (ui.js)
+  - if (ok) → if (ok && ok.success) — buildOnTile returns an object, not a boolean; any object was truthy
+  - Also fixed _showTrainMenu with the same check, and corrected uType.move → uType.movement
+  - Fixed playerCiv.concepts (doesn't exist) → playerCiv.discoveries for requirement checks
+
+  3. Territory seams fixed (renderer.js)
+  - _drawTerritoryOverlay now uses size + 0.8 to eliminate anti-aliasing gaps between adjacent hex fills
+
+  4. Resource hover tooltips (ui.js + style.css)
+  - Replaced title attribute approach with data-tooltip attribute + CSS ::after pseudo-element — instant hover tooltip
+  showing resource name, income/turn, and description
+
+  5. Aggressive bots (engine.js)
+  - War declaration threshold: turn 15 → turn 5
+  - War probability: 15% → 35% per turn (50% if twice as large)
+  - Bots always maintain ≥4 units (not just when at war)
+  - Added _botMoveUnitsAggressively(): units move toward nearest enemy capital each turn
+  - Expansion trigger: every 3 turns → every 2 turns, resource threshold lowered
+
+  6. More troop types (data.js + renderer.js)
+  - Added: drone_swarm, hacker_unit, artillery (range 2), stealth_unit, medic_drone, titan_construct, data_vampire
+  - Each has distinct canvas illustration in renderer
+
+  7. All 8 factions on board (main.js + mapgen.js)
+  - GameEngine.init(factionId, 44, 32, 7) — larger map (44×32), 7 bots
+  - Rewrote findStartingPositions to use a 2D grid of sectors (2 rows × 4 cols for 8 civs) for even distribution
+
+  8. Synthesis chamber at bottom (index.html + style.css + ui.js)
+  - Moved synthesis panel from right sidebar to a 230px horizontal bottom bar
+  - 3 tabs: "⚗️  Synthesize" (mix slots + discovered concepts), "Research Leads", "Direct Research"
+  - Tab switching wired in UI.openIdeaLab() with idempotent event listeners
